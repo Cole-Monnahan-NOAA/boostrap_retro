@@ -7,7 +7,7 @@ run_SS_boot_iteration <- function(boot, model.name,
   ## Some of these are global variables
   library(r4ss)
   dat <- SS_readdat(file.path('models', model.name,'data.ss_new'), verbose=TRUE, section=2+boot)
-  wd <- file.path('runs', model.name, 'boots', paste0("boot_", boot))
+  wd <- file.path('runs', model.name, paste0("boot_", boot))
   dir.create(wd, showWarnings=FALSE, recursive=TRUE)
   blank.files <- list.files(file.path('models', model.name,'blank'), full.names=TRUE)
   test <- file.copy(from=blank.files, to=wd, overwrite=TRUE)
@@ -31,7 +31,7 @@ run_SS_boot_iteration <- function(boot, model.name,
   SSplotComparisons(retroSummary, endyrvec=endyrvec, png=TRUE, plot=FALSE,
                     plotdir=wd, legendlabels=paste("Data",peels,"years"))
   ## Calculate Mohn's rho
-  rhos <- data.frame(model='BSAI_flathead', boot=boot,
+  rhos <- data.frame(model=model.name, boot=boot,
                      SSmohnsrho(retroSummary, endyrvec=endyrvec))
   write.csv(x=rhos, file=file.path(wd, 'results_rho.csv'),
             row.names=FALSE)
@@ -41,4 +41,37 @@ run_SS_boot_iteration <- function(boot, model.name,
       file.remove(list.files(file.path(wd), pattern='.exe', full.names=TRUE))
   }
   return(rhos)
+}
+
+#' Wrapper to run and save a single model
+#' results.list <- sfLapply(1:3, function(i)
+#'  run_SS_boot_iteration(boot=i, model.name='fhs', clean.files=TRUE))
+
+run_model <- function(Nreplicates, model.name){
+  ## Run all bootstrap results. The clean.files argument is
+  ## helpful b/c it's Nreplicates*Npeels SS runs which gets huge
+  ## fast.
+  results.list <- sfLapply(1:Nreplicates, function(i)
+    run_SS_boot_iteration(boot=i, model.name=model.name, clean.files=TRUE))
+
+  ## It fails on some. Not sure why this is happening. But hack is
+  ## to loop through and figure out which failed and simply rerun
+  ## them. Try 5 loops and break out if they all worked.
+  for(i in 1:5){
+    ff <- list.files(pattern='results_rho', recursive=TRUE)
+    results <- lapply(ff, read.csv) %>% bind_rows()
+    ind <- which(!1:Nreplicates %in% results$boot)
+    if(length(ind)>0){
+      message("Rerunning failed models=", paste(ind, collapse=' '))
+      test <- sfLapply(ind, run_SS_retro)
+    } else {
+      message("All replicates finished")
+      break
+    }
+  }
+
+  ## Read in all final results
+  ff <- list.files(pattern='results_rho', recursive=TRUE)
+  results <- lapply(ff, read.csv) %>% bind_rows()
+  saveRDS(results, file=file.path('results', paste0(model.name,'_boot_retros.RDS')))
 }
