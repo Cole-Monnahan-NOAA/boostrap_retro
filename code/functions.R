@@ -25,6 +25,10 @@ run_SS_boot_iteration <- function(boot, model.name,
     stop("Some retro runs missing in iteration ", boot)
   retroModels <- SSgetoutput(dirvec=dirvec)
   retroSummary <- SSsummarize(retroModels)
+  if(model.name=='BSAI_GT') {
+    ## What is going on here?? hack to fix error
+    retroSummary$startyrs <- rep(1961, length(peels))
+  }
   saveRDS(retroSummary, file=paste0(file.path(wd,'retroSummary.RDS')))
   saveRDS(retroModels, file=paste0(file.path(wd,'retroModels.RDS')))
   endyrvec <- retroSummary$endyrs + peels
