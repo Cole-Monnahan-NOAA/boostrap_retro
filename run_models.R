@@ -2,6 +2,7 @@
 library(tidyverse)
 library(r4ss)
 library(snowfall)
+library(ggplot2)
 theme_set(theme_bw())
 packageVersion('r4ss') #  '1.40.1'
 source('code/functions.R')
@@ -29,8 +30,9 @@ run_model(Nreps, model.name='EBS_Pcod')
 run_model(Nreps, model.name='fhs')
 run_model(Nreps, model.name='GOA_NRS')
 run_model(Nreps, model.name='GOA_SRS')
-run_model(Nreps, model.name='GOA_Pcod')
+run_model(Nreps, model.name='BSAI_GT')
 
+## run_SS_boot_iteration(1, 'BSAI_GT', FALSE)
 
 
 source('code/process_results.R')
