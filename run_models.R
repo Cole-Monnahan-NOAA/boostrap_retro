@@ -4,9 +4,8 @@ library(r4ss)
 library(snowfall)
 library(ggplot2)
 theme_set(theme_bw())
-packageVersion('r4ss') #  '1.40.1'
+packageVersion('r4ss') #  '1.42.0'
 source('code/functions.R')
-
 
 ## For each boostrap data set, run a retrospective analysis
 Nreps <- 500
