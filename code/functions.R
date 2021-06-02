@@ -63,6 +63,9 @@ sample_miller_boot <- function(boot, datlist, test=FALSE){
 #' Calculation the retrospective metrics for a single
 #' bootstrapped data set. Designed to work with parallel
 #' execution.
+results.list <- sfLapply(1:3, function(i)
+  run_SS_boot_iteration(boot=i, 'GOA_NRS', clean.files=FALSE, miller=FALSE))
+
 run_SS_boot_iteration <- function(boot, model.name,
                                   clean.files=TRUE, miller=FALSE){
   ## Some of these are global variables
@@ -71,15 +74,16 @@ run_SS_boot_iteration <- function(boot, model.name,
   if(!miller){
     dat <- SS_readdat(file.path('models', model.name,'data.ss_new'),
                       verbose=TRUE, section=2+boot)
+    wd <- file.path('runs', model.name, paste0("boot_", boot))
   } else {
     ## Original data
     dat <- SS_readdat(file.path('models', model.name,'data.ss_new'),
                       verbose=TRUE, section=1)
     ## This resamples the observed data
     dat <- sample_miller_boot(boot=boot, datlist=dat, test=FALSE)
+    wd <- file.path('runs', model.name, paste0("millerboot_", boot))
   }
 
-  wd <- file.path('runs', model.name, paste0("boot_", boot))
   dir.create(wd, showWarnings=FALSE, recursive=TRUE)
   blank.files <- list.files(file.path('models', model.name,'blank'), full.names=TRUE)
   test <- file.copy(from=blank.files, to=wd, overwrite=TRUE)
@@ -120,9 +124,6 @@ run_SS_boot_iteration <- function(boot, model.name,
 }
 
 #' Wrapper to run and save a single model
-#' results.list <- sfLapply(1:3, function(i)
-#'  run_SS_boot_iteration(boot=i, model.name='fhs', clean.files=TRUE))
-
 run_model <- function(Nreplicates, model.name){
   ## Run all bootstrap results. The clean.files argument is
   ## helpful b/c it's Nreplicates*Npeels SS runs which gets huge
