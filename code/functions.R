@@ -12,6 +12,7 @@
 #'   and Legault (2017).
 sample_miller_boot <- function(boot, datlist, test=FALSE){
   set.seed(boot)
+  if(test) library(tidyverse)
   xnew <- x <- datlist
   ind <- -(1:6) # len comp cols to drop
   ind2 <- -(1:9) # age comps has extra cols
@@ -19,27 +20,60 @@ sample_miller_boot <- function(boot, datlist, test=FALSE){
   if(ncpue>0){
     xnew$CPUE$obs <- rlnorm(nrow(x$CPUE), log(x$CPUE$obs), x$CPUE$se_log)
   }
+
+  ## Carefully resample from a comps, dealing with dummy data and
+  ## unscaled inputs
+  resample_comps <- function(bins, prob, Nsamp, sex){
+    Nsamp <- max(Nsamp, 1) # sometimes < 1 which breaks sampler
+    if (sex==1){
+      ## females only so male columns are dummy, zero them out
+      prob[-bins] <- 0
+    } else if(sex==2) {
+      ## female columns dummy
+      prob[bins] <- 0
+    }
+    ## Normalize since SS does this internally people enter
+    ## whatever. Needed to fix dummy before doing it.
+    prob <- prob/sum(prob)
+    tmp <- rmultinom(1, size=Nsamp, prob=prob)[,1]
+    if(any(!is.finite(prob)) | any(!is.finite(tmp))){
+      print(prob); print(tmp)
+      stop("NAs in simualted data")
+    }
+    tmp <- tmp/sum(tmp)
+    return(tmp)
+  }
+
   nlencomp <- nrow(x$lencomp)
   if(nlencomp>0){
-    xnew$lencomp[,ind] <- sapply(1:nlencomp, function(i){
-      tmp <- rmultinom(1, size=x$lencomp$Nsamp[i], prob=x$lencomp[i,ind])
-      tmp/sum(tmp)
-    }) %>% t
-    ## rowSums(x$lencomp[,ind])
-    ## rowSums(xnew$lencomp[,ind])
+    lbins <- x$lbin_vector
+    lc <- x$lencomp
+    for(i in 1:nlencomp){
+      prob <- as.numeric(lc[i,ind])
+      if(any(prob<0)) browser()
+      if(lc$Gender[i]!=0 & length(prob)!=2*length(lbins))
+        stop("length of probabilities do not equal length of bins")
+      xnew$lencomp[i,ind] <-
+        resample_comps(lbins, prob, lc$Nsamp[i], lc$Gender[i])
+    }
     ## Make long version for plotting
     if(test)
       lencomp.long <- pivot_longer(xnew$lencomp, -(1:6), values_to='proportion') %>%
         mutate(boot=boot, sex=substr(name,0,1), len=as.numeric(gsub('f|m','', name)))
   }
-  nagecomp <- nrow(x$agecomp)
+
+  ## Repeat with ages and CAAL
+  ac <- x$agecomp
+  nagecomp <- nrow(ac)
   if(nagecomp>0){
-    xnew$agecomp[,ind2] <- sapply(1:nagecomp, function(i){
-      tmp <- rmultinom(1, size=x$agecomp$Nsamp[i], prob=x$agecomp[i,ind2])
-      tmp/sum(tmp)
-    }) %>% t
-    ## rowSums(x$agecomp[,ind2])
-    ## rowSums(xnew$agecomp[,ind2])
+    abins <- x$agebin_vector
+    for(i in 1:nagecomp){
+      prob <- as.numeric(ac[i,ind2])
+      if(lc$Gender[i]!=0 & length(prob)!=2*length(abins))
+        stop("length of probabilities do not equal length of bins")
+      xnew$agecomp[i,ind2] <-
+        resample_comps(abins, prob, ac$Nsamp[i], ac$Gender[i])
+    }
     ## Make long version for plotting
     if(test)
       agecomp.long <- pivot_longer(xnew$agecomp, -(1:9), values_to='proportion') %>%
@@ -63,13 +97,12 @@ sample_miller_boot <- function(boot, datlist, test=FALSE){
 #' Calculation the retrospective metrics for a single
 #' bootstrapped data set. Designed to work with parallel
 #' execution.
-results.list <- sfLapply(1:3, function(i)
-  run_SS_boot_iteration(boot=i, 'GOA_NRS', clean.files=FALSE, miller=FALSE))
-
 run_SS_boot_iteration <- function(boot, model.name,
                                   clean.files=TRUE, miller=FALSE){
   ## Some of these are global variables
   library(r4ss)
+  if(!file.exists(file.path('models',model.name)))
+    stop("model not found")
   ## The two types of bootstraps are implemented here
   if(!miller){
     dat <- SS_readdat(file.path('models', model.name,'data.ss_new'),
@@ -77,10 +110,10 @@ run_SS_boot_iteration <- function(boot, model.name,
     wd <- file.path('runs', model.name, paste0("boot_", boot))
   } else {
     ## Original data
-    dat <- SS_readdat(file.path('models', model.name,'data.ss_new'),
+    dat0 <- SS_readdat(file.path('models', model.name,'data.ss'),
                       verbose=TRUE, section=1)
     ## This resamples the observed data
-    dat <- sample_miller_boot(boot=boot, datlist=dat, test=FALSE)
+    dat <- sample_miller_boot(boot=boot, datlist=dat0, test=FALSE)
     wd <- file.path('runs', model.name, paste0("millerboot_", boot))
   }
 
@@ -99,7 +132,7 @@ run_SS_boot_iteration <- function(boot, model.name,
   dirvec <- file.path(paste0(wd, '/retros'), paste("retro",peels,sep=""))
   if(length(dirvec)!=Npeels+1)
     stop("Some retro runs missing in iteration ", boot)
-  retroModels <- SSgetoutput(dirvec=dirvec)
+  retroModels <- SSgetoutput(dirvec=dirvec, getcovar=FALSE)
   retroSummary <- SSsummarize(retroModels)
   if(model.name=='BSAI_GT') {
     ## What is going on here?? hack to fix error
@@ -111,10 +144,10 @@ run_SS_boot_iteration <- function(boot, model.name,
   SSplotComparisons(retroSummary, endyrvec=endyrvec, png=TRUE, plot=FALSE,
                     plotdir=wd, legendlabels=paste("Data",peels,"years"))
   ## Calculate Mohn's rho
-  rhos <- data.frame(model=model.name, boot=boot,
-                     SSmohnsrho(retroSummary, endyrvec=endyrvec))
-  write.csv(x=rhos, file=file.path(wd, 'results_rho.csv'),
-            row.names=FALSE)
+  rho <- SSmohnsrho(retroSummary, endyrvec=endyrvec, startyr=retroSummary$startyr[1])
+  rhos <- data.frame(model=model.name, miller=miller, boot=boot, rho)
+  tmp <- ifelse(miller, 'results_miller_rho.csv', 'results_rho.csv')
+  write.csv(x=rhos, file=file.path(wd, tmp), row.names=FALSE)
   if(clean.files){
     unlink(file.path(wd, 'retros'), recursive=TRUE)
     trash <-
@@ -124,18 +157,22 @@ run_SS_boot_iteration <- function(boot, model.name,
 }
 
 #' Wrapper to run and save a single model
-run_model <- function(Nreplicates, model.name){
+run_model <- function(Nreplicates, model.name, miller=FALSE){
   ## Run all bootstrap results. The clean.files argument is
   ## helpful b/c it's Nreplicates*Npeels SS runs which gets huge
   ## fast.
-  results.list <- sfLapply(1:Nreplicates, function(i)
-    run_SS_boot_iteration(boot=i, model.name=model.name, clean.files=TRUE))
+  trash <- sfLapply(1:Nreplicates, function(i)
+    run_SS_boot_iteration(boot=i, model.name=model.name, clean.files=TRUE,
+                          miller=miller))
 
   ## It fails on some. Not sure why this is happening. But hack is
   ## to loop through and figure out which failed and simply rerun
   ## them. Try 5 loops and break out if they all worked.
+  tmp <- ifelse(miller, 'results_miller_rho', 'results_rho')
+
   for(i in 1:5){
-    ff <- list.files(pattern='results_rho', recursive=TRUE)
+    ff <- list.files(path=file.path('runs', model.name),
+                   pattern=tmp, recursive=TRUE, full.names=TRUE)
     results <- lapply(ff, read.csv) %>% bind_rows()
     ind <- which(!1:Nreplicates %in% results$boot)
     if(length(ind)>0){
@@ -148,7 +185,10 @@ run_model <- function(Nreplicates, model.name){
   }
 
   ## Read in all final results
-  ff <- list.files(pattern='results_rho', recursive=TRUE)
+  ff <- list.files(path=file.path('runs', model.name),
+                   pattern=tmp, recursive=TRUE, full.names=TRUE)
   results <- lapply(ff, read.csv) %>% bind_rows()
-  saveRDS(results, file=file.path('results', paste0(model.name,'_boot_retros.RDS')))
+  f <- paste0(model.name,ifelse(miller, '_millerboot_retros.RDS',
+                                '_boot_retros.RDS'))
+  saveRDS(results, file=file.path('results', f))
 }

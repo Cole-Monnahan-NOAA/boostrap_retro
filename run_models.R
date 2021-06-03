@@ -21,7 +21,9 @@ sfExportAll()
 ### Run full in parallel for all models. This assumes that the
 ### starter file was modifed to produce 500 replicates (502
 ### total) and was run. The "blank" files should also have
-### started file modified to reduce output to speed things up.
+### started file modified to reduce output to speed things
+### up. Finally, the data input must be named data.ss in the main
+### files, to facilitate the Miller sampling scheme.
 
 ## ## Run one in serial as a test
 ## test <- run_SS_boot_iteration(1, 'GOA_Pcod', TRUE)
@@ -31,7 +33,17 @@ run_model(Nreps, model.name='GOA_NRS')
 run_model(Nreps, model.name='GOA_SRS')
 run_model(Nreps, model.name='BSAI_GT')
 
-## run_SS_boot_iteration(1, 'BSAI_GT', FALSE)
+## Rerun using the Miller approach
+run_model(100, model.name='BSAI_FHS', miller=TRUE)
+
+
+Npeels <- 5
+run_SS_boot_iteration(999, 'BSAI_FHS', FALSE, TRUE)
+run_SS_boot_iteration(999, 'BSAI_GT', FALSE, TRUE)
+run_SS_boot_iteration(999, 'GOA_NRS', FALSE, TRUE)
+run_SS_boot_iteration(999, 'GOA_SRS', FALSE, TRUE)
+run_SS_boot_iteration(999, 'GOA_Pcod', FALSE, TRUE)
+run_SS_boot_iteration(999, 'EBS_Pcod', FALSE, TRUE)
 
 
 source('code/process_results.R')

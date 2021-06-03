@@ -1,10 +1,15 @@
 ## test that the bootstrap code for the Miller approach is
 ## working
 
-datlist <- SS_readdat('models/2020_BSAI_FHS.dat')
+datlist <- SS_readdat('models/fhs/2020_BSAI_FHS.dat')
+
+bootlist <- sample_miller_boot(1, datlist, FALSE)
+SS_writedat(bootlist, outfile='runs/fhs/millerboot_1/data.ss', overwrite=TRUE)
+
+
 
 ## Bootstrap simulations and combine together to get distributions
-out <- lapply(1:50, function(boot) sample_miller_boot(boot, datlist, test=TRUE))
+out <- lapply(1:200, function(boot) sample_miller_boot(boot, datlist, test=TRUE))
 indices <- lapply(out, function(x) x$cpue) %>% bind_rows()
 lcomps <- lapply(out, function(x) x$lencomp) %>% bind_rows()
 tmp <- lapply(out, function(x) x$agecomp) %>% bind_rows()
@@ -73,3 +78,12 @@ g.caalcomps
 indices.E <- indices %>% group_by(year) %>%
   summarize(avg=mean(log(obs))) %>% pull(avg)
 (log(datlist$CPUE$obs) - indices.E) # appears unbiased
+
+## try a single serial iteration
+run_SS_boot_iteration(25, 'BSAI_FHS', clean.files=FALSE, miller=TRUE)
+
+## Try a few iterations in parallel. Load all the global stuff in
+## run_models.R before
+results.list <- sfLapply(1:15, function(i)
+  run_SS_boot_iteration(boot=i, 'fhs', clean.files=FALSE, miller=TRUE))
+
