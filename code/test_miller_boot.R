@@ -1,17 +1,16 @@
 ## test that the bootstrap code for the Miller approach is
 ## working
 
+## test with different input files
 datlist <- SS_readdat('models/BSAI_FHS/data.ss')
-
-bootlist <- sample_miller_boot(1, datlist, FALSE)
-SS_writedat(bootlist, outfile='runs/fhs/millerboot_1/data.ss', overwrite=TRUE)
-
-
+datlist <- SS_readdat('models/GOA_NRS/data.ss')
+datlist <- SS_readdat('models/GOA_SRS/data.ss')
 
 ## Bootstrap simulations and combine together to get distributions
 out <- lapply(1:50, function(boot) sample_miller_boot(boot, datlist, test=TRUE))
 indices <- lapply(out, function(x) x$cpue) %>% bind_rows()
 lencomps <- lapply(out, function(x) x$lencomp) %>% bind_rows()
+## Split age comps into marginal and CAAL
 tmp <- lapply(out, function(x) x$agecomp) %>% bind_rows()
 agecomps <- filter(tmp, Lbin_lo<0)
 caalcomps <- filter(tmp, Lbin_lo>0)
@@ -50,42 +49,43 @@ caalcomp.long <- filter(caalcomp.long, !(Gender==1 & sex=='m') &
 ## output is
 lencomp.long  <- lencomp.long %>%
   group_by(Yr, FltSvy, Gender) %>%
-  mutate(proportion=proportion/sum(proportion))
+  mutate(proportion=proportion/sum(proportion)) %>% ungroup
 agecomp.long  <- agecomp.long %>%
   group_by(Yr, FltSvy, Gender, Lbin_lo) %>%
-  mutate(proportion=proportion/sum(proportion))
+  mutate(proportion=proportion/sum(proportion)) %>% ungroup
 caalcomp.long  <- caalcomp.long %>%
   group_by(Yr, FltSvy, Gender, Lbin_lo) %>%
-  mutate(proportion=proportion/sum(proportion))
+  mutate(proportion=proportion/sum(proportion)) %>% ungroup
 
 g.index <- ggplot(indices, aes(year, log(obs))) + geom_point(alpha=.25) +
   geom_point(data=datlist$CPUE, col='red', size=2.5) +
   facet_wrap('index') + labs(y='index')
 if(nrow(lencomp.long)>0){
-  g.lcomps <- ggplot(filter(lcomps, Yr==2018), aes(len, proportion)) +
+  g.lencomps <- ggplot(filter(lencomps, Yr==max(Yr)),
+                       aes(len, proportion)) +
   ##  facet_wrap('Yr', scales='free') +
   facet_grid(Yr+FltSvy~sex) +
   geom_jitter(alpha=.25, width=.5, height=0) +
-  geom_point(data=filter(lencomp.long, Yr == 2018),
+  geom_point(data=filter(lencomp.long, Yr == max(Yr)),
              col='red', size=2.5) +
     labs(y='length comp')
-  } else {g.lcomps <- NULL}
+  } else {g.lencomps <- NULL}
 if(nrow(agecomp.long)>0){
-g.agecomps <- ggplot(filter(agecomps, Yr>2017), aes(age, proportion)) +
+g.agecomps <- ggplot(filter(agecomps, Yr==max(Yr)), aes(age, proportion)) +
   ##  facet_wrap('Yr', scales='free') +
   facet_grid(Yr+FltSvy~sex) +
   geom_jitter(alpha=.25, width=.15, height=0)+
-  geom_point(data=filter(agecomp.long, Yr > 2017),
+  geom_point(data=filter(agecomp.long, Yr==max(Yr)),
              col='red', size=2.5) +
   labs(y='age comp')
 } else { g.agecomps <- NULL}
 if(nrow(caalcomp.long)>0){
   tmp1 <- caalcomps %>%
-    filter(Yr==2018) %>%
+    filter(Yr==max(Yr)) %>%
     filter(Lbin_lo > 30 & Lbin_lo <40)
     ##filter(Lbin_lo==min(Lbin_lo) | Lbin_lo==max(Lbin_lo))
   tmp2 <- caalcomp.long %>%
-    filter(Yr==2018) %>%
+    filter(Yr==max(Yr)) %>%
     filter(Lbin_lo > 30 & Lbin_lo <40)
   ##filter(Lbin_lo==min(Lbin_lo) | Lbin_lo==max(Lbin_lo))
   g.caalcomps <-
@@ -98,7 +98,7 @@ if(nrow(caalcomp.long)>0){
 } else { g.caalcomps <- NULL}
 
 g.index
-g.lcomps
+g.lencomps
 g.agecomps
 g.caalcomps
 
