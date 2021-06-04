@@ -49,6 +49,8 @@ sample_miller_boot <- function(boot, datlist, test=FALSE){
     lbins <- x$lbin_vector
     lc <- x$lencomp
     for(i in 1:nlencomp){
+      ## Skip resampling ghost data
+      if(lc$Yr[i]<0 | lc$FltSvy[i]<0) next
       prob <- as.numeric(lc[i,ind])
       if(any(prob<0)) browser()
       if(lc$Gender[i]!=0 & length(prob)!=2*length(lbins))
@@ -68,8 +70,10 @@ sample_miller_boot <- function(boot, datlist, test=FALSE){
   if(nagecomp>0){
     abins <- x$agebin_vector
     for(i in 1:nagecomp){
+      ## Skip resampling ghost data
+      if(ac$Yr[i]<0 | ac$FltSvy[i]<0) next
       prob <- as.numeric(ac[i,ind2])
-      if(lc$Gender[i]!=0 & length(prob)!=2*length(abins))
+      if(ac$Gender[i]!=0 & length(prob)!=2*length(abins))
         stop("length of probabilities do not equal length of bins")
       xnew$agecomp[i,ind2] <-
         resample_comps(abins, prob, ac$Nsamp[i], ac$Gender[i])
