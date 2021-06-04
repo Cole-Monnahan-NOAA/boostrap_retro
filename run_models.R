@@ -37,26 +37,19 @@ run_model(Nreps, model.name='BSAI_GT')
 run_model(100, model.name='BSAI_FHS', miller=TRUE)
 run_model(100, model.name='GOA_NRS', miller=TRUE)
 run_model(100, model.name='GOA_SRS', miller=TRUE)
-
-
-Npeels <- 5
-run_SS_boot_iteration(999, 'BSAI_FHS', FALSE, TRUE)
-run_SS_boot_iteration(999, 'BSAI_GT', FALSE, TRUE)
-run_SS_boot_iteration(999, 'GOA_NRS', FALSE, TRUE)
-run_SS_boot_iteration(999, 'GOA_SRS', FALSE, TRUE)
-run_SS_boot_iteration(999, 'GOA_Pcod', FALSE, TRUE)
-run_SS_boot_iteration(999, 'EBS_Pcod', FALSE, TRUE)
-
+run_model(100, model.name='GOA_Pcod', miller=TRUE)
+run_model(100, model.name='EBS_Pcod', miller=TRUE)
+run_model(100, model.name='BSAI_GT', miller=TRUE)
 
 source('code/process_results.R')
 
 ## Quick plot of Miller vs SS bootstrap
 results_afsc %>%
-  filter(model %in% c("GOA_NRS", "GOA_SRS","BSAI_flathead", 'BSAI_FHS')) %>%
   filter(metric=='SSB') %>%
   mutate(model=gsub('flathead', 'FHS', model),
          miller=ifelse(is.na(miller), FALSE, TRUE)) %>%
   ggplot(aes(miller, y=rho)) + geom_violin() +
   facet_grid(metric~model) + geom_hline(yintercept=0, col='red')
 
-source('code/make_plots.R')
+## Needs updating since adding Miller stuff broke it:
+## source('code/make_plots.R')
