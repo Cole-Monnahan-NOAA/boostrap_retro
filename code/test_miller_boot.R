@@ -1,7 +1,7 @@
 ## test that the bootstrap code for the Miller approach is
 ## working
 
-datlist <- SS_readdat('models/fhs/2020_BSAI_FHS.dat')
+datlist <- SS_readdat('models/BSAI_FHS/data.ss')
 
 bootlist <- sample_miller_boot(1, datlist, FALSE)
 SS_writedat(bootlist, outfile='runs/fhs/millerboot_1/data.ss', overwrite=TRUE)
@@ -9,7 +9,7 @@ SS_writedat(bootlist, outfile='runs/fhs/millerboot_1/data.ss', overwrite=TRUE)
 
 
 ## Bootstrap simulations and combine together to get distributions
-out <- lapply(1:200, function(boot) sample_miller_boot(boot, datlist, test=TRUE))
+out <- lapply(1:50, function(boot) sample_miller_boot(boot, datlist, test=TRUE))
 indices <- lapply(out, function(x) x$cpue) %>% bind_rows()
 lcomps <- lapply(out, function(x) x$lencomp) %>% bind_rows()
 tmp <- lapply(out, function(x) x$agecomp) %>% bind_rows()
@@ -60,7 +60,7 @@ if(nrow(caalcomp.long)>0){
     filter(caalcomps, sex=='f' & Yr==2018 & Lbin_lo > 20 &
   Lbin_lo <40) %>%
   ggplot(aes(age, proportion)) +
-   facet_wrap('Lbin_lo', scales='free') +
+   facet_grid(sex~Lbin_lo, scales='free') +
   ##facet_grid(Yr+FltSvy~sex+Lbin_lo) +
   geom_jitter(alpha=.25, width=.15, height=0) +
   geom_point(data=filter(caalcomp.long, Yr == 2018 & Lbin_lo > 20 & Lbin_lo <40),

@@ -2,7 +2,7 @@
 ### Process all results together and melt into long format for ggplot
 results <- list.files('results', pattern='boot_retro',
                       full.names=TRUE) %>% lapply(readRDS) %>%
-  bind_rows() %>% pivot_longer(cols=-c('model', 'boot'),
+  bind_rows() %>% pivot_longer(cols=-c('model', 'boot', 'miller'),
                                names_to='metric',
                                values_to='rho') %>%
   ## Split names into three types of Rho's
