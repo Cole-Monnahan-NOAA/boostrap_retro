@@ -43,13 +43,25 @@ run_model(100, model.name='BSAI_GT', miller=TRUE)
 
 source('code/process_results.R')
 
+rho_obs <- readRDS('results/rhoAll.RDS') %>% filter(type=='AFSC' & metric!='Rec')
+rho_obs <- bind_rows(rho_obs, mutate(rho_obs, miller=FALSE))
 ## Quick plot of Miller vs SS bootstrap
-results_afsc %>%
-  filter(metric=='SSB') %>%
+g <- results_afsc %>%
+  filter(metric!='Rec') %>%
   mutate(model=gsub('flathead', 'FHS', model),
-         miller=ifelse(is.na(miller), FALSE, TRUE)) %>%
+         miller=replace_na(miller, FALSE)) %>%
   ggplot(aes(miller, y=rho)) + geom_violin() +
-  facet_grid(metric~model) + geom_hline(yintercept=0, col='red')
+  facet_grid(metric~model) + geom_hline(yintercept=0, col='red')+
+  geom_point(data=rho_obs, col='red', size=2)
+ggsave('plots/results_miller.png', g, width=7, height=5)
+
+## Are the variances the same?
+
+results_afsc %>% mutate(miller=replace_na(miller, FALSE),
+                        model=gsub('flathead', 'FHS', model)) %>%
+  group_by(model, metric, miller) %>%
+  summarize(stdev=round(sd(rho),3)) %>% pivot_wider(c(model, metric),
+  names_from=miller, names_prefix='miller=', values_from=stdev)
 
 ## Needs updating since adding Miller stuff broke it:
 ## source('code/make_plots.R')
