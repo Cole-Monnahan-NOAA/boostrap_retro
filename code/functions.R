@@ -138,7 +138,7 @@ run_SS_boot_iteration <- function(boot, model.name,
     stop("Some retro runs missing in iteration ", boot)
   retroModels <- SSgetoutput(dirvec=dirvec, getcovar=FALSE)
   retroSummary <- SSsummarize(retroModels)
-  if(model.name=='BSAI_GT') {
+  if(model.name %in% c('BSAI_GT', 'BSAI_GT2')) {
     ## What is going on here?? hack to fix error
     retroSummary$startyrs <- rep(1961, length(peels))
   }
