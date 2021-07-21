@@ -161,11 +161,11 @@ run_SS_boot_iteration <- function(boot, model.name,
 }
 
 #' Wrapper to run and save a single model
-run_model <- function(Nreplicates, model.name, miller=FALSE){
+run_model <- function(reps, model.name, miller=FALSE){
   ## Run all bootstrap results. The clean.files argument is
   ## helpful b/c it's Nreplicates*Npeels SS runs which gets huge
   ## fast.
-  trash <- sfLapply(1:Nreplicates, function(i)
+  trash <- sfLapply(reps, function(i)
     run_SS_boot_iteration(boot=i, model.name=model.name, clean.files=TRUE,
                           miller=miller))
 

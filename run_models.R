@@ -9,6 +9,7 @@ source('code/functions.R')
 
 ## For each boostrap data set, run a retrospective analysis
 Nreps <- 500
+reps <- 1:Nreps
 Npeels <- 10
 peels <- 0:-Npeels
 
@@ -27,21 +28,21 @@ sfExportAll()
 
 ## ## Run one in serial as a test
 ## test <- run_SS_boot_iteration(1, 'BSAI_GT2', TRUE)
-run_model(Nreps, model.name='EBS_Pcod')
-run_model(Nreps, model.name='fhs')
-run_model(Nreps, model.name='GOA_NRS')
-run_model(Nreps, model.name='GOA_SRS')
-run_model(Nreps, model.name='BSAI_GT')
-run_model(Nreps, model.name='BSAI_GT2')
+run_model(reps, model.name='EBS_Pcod')
+run_model(reps, model.name='fhs')
+run_model(reps, model.name='GOA_NRS')
+run_model(reps, model.name='GOA_SRS')
+run_model(reps, model.name='BSAI_GT')
+run_model(reps, model.name='BSAI_GT2')
 
 ## Rerun using the Miller approach
-run_model(Nreps, model.name='BSAI_FHS', miller=TRUE)
-run_model(Nreps, model.name='GOA_NRS', miller=TRUE)
-run_model(Nreps, model.name='GOA_SRS', miller=TRUE)
-run_model(Nreps, model.name='GOA_Pcod', miller=TRUE)
-run_model(Nreps, model.name='EBS_Pcod', miller=TRUE)
-run_model(Nreps, model.name='BSAI_GT', miller=TRUE)
-run_model(Nreps, model.name='BSAI_GT2', miller=TRUE)
+run_model(reps, model.name='BSAI_FHS', miller=TRUE)
+run_model(reps, model.name='GOA_NRS', miller=TRUE)
+run_model(reps, model.name='GOA_SRS', miller=TRUE)
+run_model(reps, model.name='GOA_Pcod', miller=TRUE)
+run_model(reps, model.name='EBS_Pcod', miller=TRUE)
+run_model(reps, model.name='BSAI_GT', miller=TRUE)
+run_model(reps, model.name='BSAI_GT2', miller=TRUE)
 
 source('code/process_results.R')
 
