@@ -59,10 +59,11 @@ sample_miller_boot <- function(boot, datlist, test=FALSE){
     tmp <- tmp/sum(tmp)
     return(tmp)
   }
-  nlencomp <- nrow(x$lencomp)
-  if(nlencomp>0){
+  lc <- x$lencomp
+  if(!is.null(lc)){
+    nlencomp <- nrow(x$lencomp)
+    stopifnot(nlencomp>0)
     lbins <- x$lbin_vector
-    lc <- x$lencomp
     for(i in 1:nlencomp){
       ## Skip resampling ghost data
       if(lc$Yr[i]<0 | lc$FltSvy[i]<0) next
@@ -78,8 +79,9 @@ sample_miller_boot <- function(boot, datlist, test=FALSE){
 
   ## Repeat with ages and CAAL
   ac <- x$agecomp
-  nagecomp <- nrow(ac)
-  if(nagecomp>0){
+  if(!is.null(ac)){
+    nagecomp <- nrow(ac)
+    stopifnot(nagecomp>0)
     abins <- x$agebin_vector
     for(i in 1:nagecomp){
       ## Skip resampling ghost data
@@ -157,8 +159,11 @@ run_SS_boot_iteration <- function(boot, model.name,
   endyrvec <- retroSummary$endyrs + peels
   SSplotComparisons(retroSummary, subplots=1:3, endyrvec=endyrvec, png=TRUE, plot=FALSE,
                     plotdir=wd, legendlabels=paste("Data",peels,"years"))
-  ## Calculate Mohn's rho
-  rho <- SSmohnsrho(retroSummary, endyrvec=endyrvec, startyr=retroSummary$startyr[1])
+  ## Calculate Mohn's rho. Not sure why I need to increase
+  ## startyr here but errors out for some models if I don't. It
+  ## looks like this is only relevant for WHOI rho calcs so seems
+  ## fine to ignore.
+  rho <- SSmohnsrho(retroSummary, endyrvec=endyrvec, startyr=retroSummary$startyr[1]+1)
   rhos <- data.frame(model=model.name, miller=miller, boot=boot, rho)
   tmp <- ifelse(miller, 'results_miller_rho.csv', 'results_rho.csv')
   write.csv(x=rhos, file=file.path(wd, tmp), row.names=FALSE)
@@ -188,7 +193,7 @@ run_model <- function(reps, model.name, miller=FALSE){
     ff <- list.files(path=file.path('runs', model.name),
                    pattern=tmp, recursive=TRUE, full.names=TRUE)
     results <- lapply(ff, read.csv) %>% bind_rows()
-    ind <- which(!1:Nreplicates %in% results$boot)
+    ind <- which(!reps %in% results$boot)
     if(length(ind)>0){
       message("Rerunning failed models=", paste(ind, collapse=' '))
       test <- sfLapply(ind, run_SS_retro)
