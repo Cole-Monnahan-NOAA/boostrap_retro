@@ -10,6 +10,7 @@ source('code/functions.R')
 ## For each boostrap data set, run a retrospective analysis
 Nreps <- 500
 reps <- 1:Nreps
+reps <- 1:100
 Npeels <- 10
 peels <- 0:-Npeels
 
@@ -34,6 +35,10 @@ run_model(reps, model.name='GOA_NRS')
 run_model(reps, model.name='GOA_SRS')
 run_model(reps, model.name='BSAI_GT')
 run_model(reps, model.name='BSAI_GT2')
+run_model(reps, model.name='bluedeacon')
+run_model(reps, model.name='dogfish')
+run_model(reps, model.name='greenling')
+
 
 ## Rerun using the Miller approach
 run_model(reps, model.name='BSAI_FHS', miller=TRUE)
@@ -43,6 +48,11 @@ run_model(reps, model.name='GOA_Pcod', miller=TRUE)
 run_model(reps, model.name='EBS_Pcod', miller=TRUE)
 run_model(reps, model.name='BSAI_GT', miller=TRUE)
 run_model(reps, model.name='BSAI_GT2', miller=TRUE)
+run_model(reps, model.name='bluedeacon', miller=TRUE)
+run_model(reps, model.name='dogfish', miller=TRUE)
+run_model(reps, model.name='greenling', miller=TRUE)
+
+test <- run_SS_boot_iteration(1, 'bluedeacon', miller=TRUE)
 
 source('code/process_results.R')
 
