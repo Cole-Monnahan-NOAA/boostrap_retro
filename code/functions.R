@@ -16,6 +16,7 @@ sample_miller_boot <- function(boot, datlist, test=FALSE){
   xnew <- x <- datlist
   ind <- -(1:6) # len comp cols to drop
   ind2 <- -(1:9) # age comps has extra cols
+
   ncpue <- nrow(x$CPUE)
   if(ncpue>0){
     xnew$CPUE$obs <- rlnorm(nrow(x$CPUE), log(x$CPUE$obs), x$CPUE$se_log)
@@ -23,18 +24,33 @@ sample_miller_boot <- function(boot, datlist, test=FALSE){
 
   ## Carefully resample from a comps, dealing with dummy data and
   ## unscaled inputs
-  resample_comps <- function(bins, prob, Nsamp, sex){
+  resample_comps <- function(bins, prob, Nsamp, sex, i, type){
+    prob0 <- prob ## save in case want ot inspect during browser
+    ## convert bins to an index
+    bins <- seq_along(bins)
+    if(any(!is.finite(prob))){
+      print(prob)
+      message('Bad ', type, ' comp probs for row  ', i)
+      browser()
+    }
+    if(sex!=0 & length(prob)!=2*length(bins))
+        stop("length of probabilities in ", type, " ", i, " does not equal length of bins")
     Nsamp <- max(Nsamp, 1) # sometimes < 1 which breaks sampler
-    if (sex==1){
-      ## females only so male columns are dummy, zero them out
+    if (sex==1 | sex==0){
+      ## combined or females only so male columns are dummy, zero them out
       prob[-bins] <- 0
     } else if(sex==2) {
       ## female columns dummy
       prob[bins] <- 0
+    } else if(sex!=3){
+      ## sex=3 is females then males so leave as is
+      stop("sex=", sex, "not setup to work")
     }
     ## Normalize since SS does this internally people enter
     ## whatever. Needed to fix dummy before doing it.
     prob <- prob/sum(prob)
+    if(all(prob==0)) browser()
+    if(any(!is.finite(prob))) browser()
     tmp <- rmultinom(1, size=Nsamp, prob=prob)[,1]
     if(any(!is.finite(prob)) | any(!is.finite(tmp))){
       print(prob); print(tmp)
@@ -43,7 +59,6 @@ sample_miller_boot <- function(boot, datlist, test=FALSE){
     tmp <- tmp/sum(tmp)
     return(tmp)
   }
-
   nlencomp <- nrow(x$lencomp)
   if(nlencomp>0){
     lbins <- x$lbin_vector
@@ -52,11 +67,8 @@ sample_miller_boot <- function(boot, datlist, test=FALSE){
       ## Skip resampling ghost data
       if(lc$Yr[i]<0 | lc$FltSvy[i]<0) next
       prob <- as.numeric(lc[i,ind])
-      if(any(prob<0)) browser()
-      if(lc$Gender[i]!=0 & length(prob)!=2*length(lbins))
-        stop("length of probabilities do not equal length of bins")
       xnew$lencomp[i,ind] <-
-        resample_comps(lbins, prob, lc$Nsamp[i], lc$Gender[i])
+        resample_comps(lbins, prob, lc$Nsamp[i], lc$Gender[i], i, 'length')
     }
     ## Make long version for plotting
     if(test)
@@ -73,10 +85,8 @@ sample_miller_boot <- function(boot, datlist, test=FALSE){
       ## Skip resampling ghost data
       if(ac$Yr[i]<0 | ac$FltSvy[i]<0) next
       prob <- as.numeric(ac[i,ind2])
-      if(ac$Gender[i]!=0 & length(prob)!=2*length(abins))
-        stop("length of probabilities do not equal length of bins")
       xnew$agecomp[i,ind2] <-
-        resample_comps(abins, prob, ac$Nsamp[i], ac$Gender[i])
+        resample_comps(abins, prob, ac$Nsamp[i], ac$Gender[i], i, 'age')
     }
     ## Make long version for plotting
     if(test)
@@ -145,7 +155,7 @@ run_SS_boot_iteration <- function(boot, model.name,
   saveRDS(retroSummary, file=paste0(file.path(wd,'retroSummary.RDS')))
   saveRDS(retroModels, file=paste0(file.path(wd,'retroModels.RDS')))
   endyrvec <- retroSummary$endyrs + peels
-  SSplotComparisons(retroSummary, endyrvec=endyrvec, png=TRUE, plot=FALSE,
+  SSplotComparisons(retroSummary, subplots=1:3, endyrvec=endyrvec, png=TRUE, plot=FALSE,
                     plotdir=wd, legendlabels=paste("Data",peels,"years"))
   ## Calculate Mohn's rho
   rho <- SSmohnsrho(retroSummary, endyrvec=endyrvec, startyr=retroSummary$startyr[1])
