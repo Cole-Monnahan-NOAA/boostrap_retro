@@ -133,11 +133,13 @@ run_SS_boot_iteration <- function(boot, model.name,
     wd <- file.path('runs', model.name, paste0("millerboot_", boot))
   }
 
-  dir.create(wd, showWarnings=FALSE, recursive=TRUE)
+  dir.create(wd, showWarnings=TRUE, recursive=TRUE)
   blank.files <- list.files(file.path('models', model.name,'blank'), full.names=TRUE)
   test <- file.copy(from=blank.files, to=wd, overwrite=TRUE)
-  if(!all(test))
+  if(!all(test)){
+    message(paste(blank.files[!test], collapse= '\n'))
     stop("Some blank files failed to copy for iteration ", boot)
+  }
   ## Write new data
   SS_writedat(dat, outfile=paste0(wd, '/data.ss'), verbose=FALSE,
               overwrite=TRUE)
@@ -171,6 +173,8 @@ run_SS_boot_iteration <- function(boot, model.name,
     unlink(file.path(wd, 'retros'), recursive=TRUE)
     trash <-
       file.remove(list.files(file.path(wd), pattern='.exe', full.names=TRUE))
+    file.remove(file.path(wd, 'retroSummary.RDS'))
+    file.remove(file.path(wd, 'retroModels.RDS'))
   }
   return(rhos)
 }
@@ -198,7 +202,7 @@ run_model <- function(reps, model.name, miller=FALSE){
       message("Rerunning failed models=", paste(ind, collapse=' '))
       test <- sfLapply(ind, run_SS_retro)
     } else {
-      message("All replicates finished")
+      message("All replicates finished for model=", model.name, ' boot=', boot)
       break
     }
   }
