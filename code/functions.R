@@ -195,18 +195,14 @@ run_model <- function(reps, model.name, miller=FALSE){
 
   for(i in 1:5){
     ff <- list.files(path=file.path('runs', model.name),
-                   pattern=tmp, recursive=TRUE, full.names=TRUE)
+                     pattern=tmp, recursive=TRUE, full.names=TRUE)
     results <- lapply(ff, read.csv) %>% bind_rows()
     ind <- which(!reps %in% results$boot)
     if(length(ind)>0){
-      message("Rerunning failed models=", paste(ind, collapse=' '))
+      message("Rerunning failed ", model.name, " models= ", paste(ind, collapse=','))
       test <- sfLapply(ind, run_SS_retro)
-    } else {
-      message("All replicates finished for model=", model.name, ' boot=', boot)
-      break
     }
   }
-
   ## Read in all final results
   ff <- list.files(path=file.path('runs', model.name),
                    pattern=tmp, recursive=TRUE, full.names=TRUE)
@@ -214,4 +210,8 @@ run_model <- function(reps, model.name, miller=FALSE){
   f <- paste0(model.name,ifelse(miller, '_millerboot_retros.RDS',
                                 '_boot_retros.RDS'))
   saveRDS(results, file=file.path('results', f))
+  message("All replicates finished for model=", model.name,
+    " and miller=", miller)
 }
+
+
