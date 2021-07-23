@@ -143,6 +143,7 @@ run_SS_boot_iteration <- function(boot, model.name,
   ## Write new data
   SS_writedat(dat, outfile=paste0(wd, '/data.ss'), verbose=FALSE,
               overwrite=TRUE)
+  newfiles <- list.files(wd, full.names=TRUE) # mark for deletion at end
   ## Run retro for this bootstrap one
   SS_doRetro(masterdir=getwd(), oldsubdir=wd,
              newsubdir=paste0(wd, '/retros'),
@@ -171,21 +172,26 @@ run_SS_boot_iteration <- function(boot, model.name,
   write.csv(x=rhos, file=file.path(wd, tmp), row.names=FALSE)
   if(clean.files){
     unlink(file.path(wd, 'retros'), recursive=TRUE)
-    trash <-
-      file.remove(list.files(file.path(wd), pattern='.exe', full.names=TRUE))
     file.remove(file.path(wd, 'retroSummary.RDS'))
     file.remove(file.path(wd, 'retroModels.RDS'))
+    ## trash <-
+    ##   file.remove(list.files(file.path(wd), pattern='.exe', full.names=TRUE))
+    ## tmp <- file.path(wd, 'wtatage.ss')
+    ## if(file.exists(tmp)) file.remove(tmp)
+    ## ## this can be large so it'd be nice to keep but deleting for now
+    ## file.remove(file.path(wd, 'data.ss'))
+    file.remove(newfiles)
   }
   return(rhos)
 }
 
 #' Wrapper to run and save a single model
-run_model <- function(reps, model.name, miller=FALSE){
+run_model <- function(reps, model.name, miller=FALSE, clean.files=TRUE){
   ## Run all bootstrap results. The clean.files argument is
   ## helpful b/c it's Nreplicates*Npeels SS runs which gets huge
   ## fast.
   trash <- sfLapply(reps, function(i)
-    run_SS_boot_iteration(boot=i, model.name=model.name, clean.files=TRUE,
+    run_SS_boot_iteration(boot=i, model.name=model.name, clean.files=clean.files,
                           miller=miller))
 
   ## It fails on some. Not sure why this is happening. But hack is
@@ -199,11 +205,14 @@ run_model <- function(reps, model.name, miller=FALSE){
     results <- lapply(ff, read.csv) %>% bind_rows()
     ind <- which(!reps %in% results$boot)
     if(length(ind)>0){
-      message("Rerunning failed ", model.name, " models= ", paste(ind, collapse=','))
-      test <- sfLapply(ind, run_SS_retro)
+      warning("Rerunning failed ", model.name, " models= ", paste(ind, collapse=','))
+      trash <- sfLapply(reps, function(i)
+        run_SS_boot_iteration(boot=i, model.name=model.name, clean.files=clean.files,
+                              miller=miller))
     }
   }
-  ## Read in all final results
+  ## Read in all final results, including those not necessarily
+  ## in reps since they could have been run ea
   ff <- list.files(path=file.path('runs', model.name),
                    pattern=tmp, recursive=TRUE, full.names=TRUE)
   results <- lapply(ff, read.csv) %>% bind_rows()

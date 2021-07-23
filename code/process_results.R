@@ -19,3 +19,13 @@ results <- list.files('results', pattern='boot_retro',
 results_normal <- filter(results, type=='Normal')
 results_afsc <- filter(results, type=='AFSC')
 results_woodshole <- filter(results, type=='WoodsHole')
+
+## Process the observed rhos
+rho_obs <- read.csv('results/rho_obs.csv') %>%
+  filter(metric!='Rec' & type=='AFSC')
+## Duplicate for ggplot faceting
+rho_obs <- bind_rows(rho_obs, mutate(rho_obs, miller=FALSE))
+
+## rho_obs_new <- read.csv('../ss-test-models/rho_obs_new.csv')
+## rho_obs <- bind_rows(rho_obs, rho_obs_new)
+## write.csv(rho_obs, file='results/rho_obs.csv', row.names=FALSE)
