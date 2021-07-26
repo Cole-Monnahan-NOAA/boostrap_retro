@@ -10,7 +10,6 @@ source('code/functions.R')
 ## For each boostrap data set, run a retrospective analysis
 Nreps <- 500
 reps <- 1:Nreps
-reps <- 1:100
 Npeels <- 10
 peels <- 0:-Npeels
 
@@ -52,15 +51,14 @@ run_model(reps, model.name='bluedeacon', miller=TRUE)
 run_model(reps, model.name='dogfish', miller=TRUE)
 run_model(reps, model.name='greenling', miller=TRUE)
 
-test <- run_SS_boot_iteration(1, 'bluedeacon', miller=TRUE)
-
 source('code/process_results.R')
 
-results_afsc %>% filter(rho>3)
+## results_afsc <- results_afsc %>% filter(rho<3)
 results_afsc <- results_afsc %>% filter(! (model=='BSAI_GT2' & boot==403))
+results_afsc %>% group_by(model,miller) %>%
+  filter(metric=='SSB') %>% summarize(count=n()) %>%
+  pivot_wider('model', names_from='miller', values_from='count')
 
-rho_obs <- readRDS('results/rhoAll.RDS') %>% filter(type=='AFSC' & metric!='Rec')
-rho_obs <- bind_rows(rho_obs, mutate(rho_obs, miller=FALSE))
 ## Quick plot of Miller vs SS bootstrap
 g <- results_afsc %>%
   filter(metric!='Rec') %>%
@@ -68,11 +66,11 @@ g <- results_afsc %>%
          miller=replace_na(miller, FALSE)) %>%
   ggplot(aes(miller, y=rho)) + geom_violin() +
   facet_grid(metric~model, scales='free') + geom_hline(yintercept=0, col='red')+
-  geom_point(data=rho_obs, col='red', size=2)
-ggsave('plots/results_miller.png', g, width=7, height=5)
+  geom_point(data=rho_obs, col='red', size=2) +
+  coord_cartesian(ylim=c(-2,2))
+ggsave('plots/results_miller.png', g, width=9, height=5)
 
 ## Are the variances the same?
-
 results_afsc %>% mutate(miller=replace_na(miller, FALSE),
                         model=gsub('flathead', 'FHS', model)) %>%
   group_by(model, metric, miller) %>%
