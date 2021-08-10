@@ -132,7 +132,7 @@ run_SS_boot_iteration <- function(boot, model.name,
     dat <- sample_miller_boot(boot=boot, datlist=dat0, test=FALSE)
     wd <- file.path('runs', model.name, paste0("millerboot_", boot))
   }
-
+  ## Prepare folder to run this iteration
   dir.create(wd, showWarnings=TRUE, recursive=TRUE)
   blank.files <- list.files(file.path('models', model.name,'blank'), full.names=TRUE)
   test <- file.copy(from=blank.files, to=wd, overwrite=TRUE)
@@ -148,28 +148,46 @@ run_SS_boot_iteration <- function(boot, model.name,
   SS_doRetro(masterdir=getwd(), oldsubdir=wd,
              newsubdir=paste0(wd, '/retros'),
              years=peels, extras='-nohess -nox -iprint 1000')
-  dirvec <- file.path(paste0(wd, '/retros'), paste("retro",peels,sep=""))
+  dirvec <- file.path(paste0(wd, '/retros'), paste0("retro", peels))
   if(length(dirvec)!=Npeels+1)
-    stop("Some retro runs missing in iteration ", boot)
+    stop("Some retro runs missing in", model.name, " iteration ",
+         boot)
+  ## Read in all peels
   retroModels <- SSgetoutput(dirvec=dirvec, getcovar=FALSE)
-  retroSummary <- SSsummarize(retroModels)
-  if(model.name %in% c('BSAI_GT', 'BSAI_GT2')) {
-    ## What is going on here?? hack to fix error
-    retroSummary$startyrs <- rep(1961, length(peels))
-  }
-  saveRDS(retroSummary, file=paste0(file.path(wd,'retroSummary.RDS')))
   saveRDS(retroModels, file=paste0(file.path(wd,'retroModels.RDS')))
-  endyrvec <- retroSummary$endyrs + peels
-  SSplotComparisons(retroSummary, subplots=1:3, endyrvec=endyrvec, png=TRUE, plot=FALSE,
-                    plotdir=wd, legendlabels=paste("Data",peels,"years"))
-  ## Calculate Mohn's rho. Not sure why I need to increase
-  ## startyr here but errors out for some models if I don't. It
-  ## looks like this is only relevant for WHOI rho calcs so seems
-  ## fine to ignore.
-  rho <- SSmohnsrho(retroSummary, endyrvec=endyrvec, startyr=retroSummary$startyr[1]+1)
-  rhos <- data.frame(model=model.name, miller=miller, boot=boot, rho)
+  ## Pluck out a subset of 7 peels and calculate rho
+  pdf(file=file.path(wd, 'retro_plots.pdf'), onefile=TRUE,
+      width=7, height=9)
+  rhos <- list(); k <- 1
+  for(peelyr in 0:7){
+    peels.tmp <- peels[(1+peelyr):(peelyr+8)] # peel #
+    peels.ind <- which(peels %in% peels.tmp)  # peel index
+    retroSummary <- SSsummarize(retroModels[peels.ind], verbose=FALSE)
+    endyrvec <- retroSummary$endyrs + peels.tmp
+    if(model.name %in% c('BSAI_GT', 'BSAI_GT2')) {
+      ## What is going on here?? hack to fix error
+      retroSummary$startyrs <- rep(1961, length(peels))
+    }
+    ## We have 14 peels so with a 7-peel year we can do 7
+    par(mfrow=c(3,1))
+    SSplotComparisons(retroSummary, subplots=c(1,3,9), endyrvec=endyrvec, png=FALSE, plot=TRUE,
+                      plotdir=wd,  new=FALSE, add=FALSE, uncertainty=FALSE,
+                      legendlabels=paste("Data",peels,"years"))
+    mtext(paste0('Base year=', endyrvec[1]), side=3, line=-3,
+          outer=TRUE)
+    ## Calculate Mohn's rho. Not sure why I need to increase
+    ## startyr here but errors out for some models if I don't. It
+    ## looks like this is only relevant for WHOI rho calcs so seems
+    ## fine to ignore.
+    rho <- SSmohnsrho(retroSummary, endyrvec=endyrvec, startyr=retroSummary$startyr[1]+1)
+    rhos[[k]] <- data.frame(model=model.name, baseyear=endyrvec[1], miller=miller, boot=boot, rho)
+    k <- k+1
+  }
+  dev.off()
   tmp <- ifelse(miller, 'results_miller_rho.csv', 'results_rho.csv')
+  rhos <- do.call(rbind, rhos)
   write.csv(x=rhos, file=file.path(wd, tmp), row.names=FALSE)
+
   if(clean.files){
     unlink(file.path(wd, 'retros'), recursive=TRUE)
     file.remove(file.path(wd, 'retroSummary.RDS'))
