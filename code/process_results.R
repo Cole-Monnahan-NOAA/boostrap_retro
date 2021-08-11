@@ -17,17 +17,21 @@ results <- list.files('results', pattern='boot_retro',
   filter(metric!='Rec')
 
 ## Which Rho metric to use?
-results_normal <- filter(results, type=='Normal')
-results_afsc <- filter(results, type=='AFSC')
-results_woodshole <- filter(results, type=='WoodsHole')
+results_normal <- filter(results, type=='Normal' & boot>0)
+results_afsc <- filter(results, type=='AFSC' & boot>0)
+results_woodshole <- filter(results, type=='WoodsHole' & boot>0)
 
-## Process the observed rhos
-rho_obs <- read.csv('results/rho_obs.csv') %>%
-  filter(metric!='Rec' & type=='AFSC')
-## Duplicate for ggplot faceting
-rho_obs <- bind_rows(rho_obs, mutate(rho_obs, miller=FALSE))
-rho_obs <- filter(rho_obs, model %in% c("EBS_Pcod", "GOA_Pcod", "GOA_NRS")) %>%droplevels
+## boot 0 is special code to run the real data so split this off
+rho_obs <- results %>% filter(boot==0 & type=='AFSC')
 
+
+### old way of doing this
+## ## Process the observed rhos
+## rho_obs <- read.csv('results/rho_obs.csv') %>%
+##   filter(metric!='Rec' & type=='AFSC')
+## ## Duplicate for ggplot faceting
+## rho_obs <- bind_rows(rho_obs, mutate(rho_obs, miller=FALSE))
+## rho_obs <- filter(rho_obs, model %in% c("EBS_Pcod", "GOA_Pcod", "GOA_NRS")) %>%droplevels
 ## rho_obs_new <- read.csv('../ss-test-models/rho_obs_new.csv')
 ## rho_obs <- bind_rows(rho_obs, rho_obs_new)
 ## write.csv(rho_obs, file='results/rho_obs.csv', row.names=FALSE)

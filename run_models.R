@@ -8,9 +8,9 @@ packageVersion('r4ss') #  '1.42.0'
 source('code/functions.R')
 
 ## For each boostrap data set, run a retrospective analysis
-Nreps <- 500
+Nreps <- 300
 reps <- 1:Nreps
-Npeels <- 10
+Npeels <- 14
 peels <- 0:-Npeels
 
 ## Setup to run parallel, saving a single core free.
@@ -27,55 +27,40 @@ sfExportAll()
 ### files, to facilitate the Miller sampling scheme.
 
 ## ## Run one in serial as a test
-## test <- run_SS_boot_iteration(1, 'BSAI_GT2', TRUE)
+## test <- run_SS_boot_iteration(1, 'EBS_Pcod', TRUE)
 run_model(reps, model.name='EBS_Pcod')
-run_model(reps, model.name='fhs')
+run_model(reps, model.name='GOA_Pcod')
 run_model(reps, model.name='GOA_NRS')
-run_model(reps, model.name='GOA_SRS')
-run_model(reps, model.name='BSAI_GT')
-run_model(reps, model.name='BSAI_GT2')
-run_model(reps, model.name='bluedeacon')
-run_model(reps, model.name='dogfish')
-run_model(reps, model.name='greenling')
 
 
 ## Rerun using the Miller approach
-run_model(reps, model.name='BSAI_FHS', miller=TRUE)
-run_model(reps, model.name='GOA_NRS', miller=TRUE)
-run_model(reps, model.name='GOA_SRS', miller=TRUE)
-run_model(reps, model.name='GOA_Pcod', miller=TRUE)
 run_model(reps, model.name='EBS_Pcod', miller=TRUE)
-run_model(reps, model.name='BSAI_GT', miller=TRUE)
-run_model(reps, model.name='BSAI_GT2', miller=TRUE)
-run_model(reps, model.name='bluedeacon', miller=TRUE)
-run_model(reps, model.name='dogfish', miller=TRUE)
-run_model(reps, model.name='greenling', miller=TRUE)
+run_model(reps, model.name='GOA_Pcod', miller=TRUE)
+run_model(reps, model.name='GOA_NRS', miller=TRUE)
 
 source('code/process_results.R')
 
-## results_afsc <- results_afsc %>% filter(rho<3)
-results_afsc <- results_afsc %>% filter(! (model=='BSAI_GT2' & boot==403))
-results_afsc %>% group_by(model,miller) %>%
+## The models have different end years so the baseyears are
+## different, but check for full replicates
+results_afsc %>% group_by(model,miller, baseyear) %>%
   filter(metric=='SSB') %>% summarize(count=n()) %>%
-  pivot_wider('model', names_from='miller', values_from='count')
+  pivot_wider(c(model, miller),  names_from='baseyear', values_from='count')
 
 ## Quick plot of Miller vs SS bootstrap
 g <- results_afsc %>%
   filter(metric!='Rec') %>%
-  mutate(model=gsub('flathead', 'FHS', model),
-         miller=replace_na(miller, FALSE)) %>%
-  ggplot(aes(miller, y=rho)) + geom_violin() +
+  ggplot(aes(baseyear, y=rho, fill=miller)) + geom_violin() +
   facet_grid(metric~model, scales='free') + geom_hline(yintercept=0, col='red')+
-  geom_point(data=rho_obs, col='red', size=2) +
-  coord_cartesian(ylim=c(-2,2))
-ggsave('plots/results_miller.png', g, width=9, height=5)
+  geom_point(data=rho_obs, col='red',pch='-', size=10) +
+  coord_cartesian(ylim=c(-.5,.5))
+ggsave('plots/results_miller.png', g, width=12, height=7)
 
-## Are the variances the same?
-results_afsc %>% mutate(miller=replace_na(miller, FALSE),
-                        model=gsub('flathead', 'FHS', model)) %>%
-  group_by(model, metric, miller) %>%
-  summarize(stdev=round(sd(rho),3)) %>% pivot_wider(c(model, metric),
-  names_from=miller, names_prefix='miller=', values_from=stdev)
+## ## Are the variances the same?
+## results_afsc %>% mutate(miller=replace_na(miller, FALSE),
+##                         model=gsub('flathead', 'FHS', model)) %>%
+##   group_by(model, metric, miller) %>%
+##   summarize(stdev=round(sd(rho),3)) %>% pivot_wider(c(model, metric),
+##   names_from=miller, names_prefix='miller=', values_from=stdev)
 
 ## Needs updating since adding Miller stuff broke it:
 ## source('code/make_plots.R')

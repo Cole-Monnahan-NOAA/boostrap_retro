@@ -117,20 +117,32 @@ run_SS_boot_iteration <- function(boot, model.name,
                                   clean.files=TRUE, miller=FALSE){
   ## Some of these are global variables
   library(r4ss)
-  if(!file.exists(file.path('models',model.name)))
-    stop("model not found")
-  ## The two types of bootstraps are implemented here
   if(!miller){
-    dat <- SS_readdat(file.path('models', model.name,'data.ss_new'),
-                      verbose=TRUE, section=2+boot)
     wd <- file.path('runs', model.name, paste0("boot_", boot))
   } else {
-    ## Original data
-    dat0 <- SS_readdat(file.path('models', model.name,'data.ss'),
-                      verbose=TRUE, section=1)
-    ## This resamples the observed data
-    dat <- sample_miller_boot(boot=boot, datlist=dat0, test=FALSE)
     wd <- file.path('runs', model.name, paste0("millerboot_", boot))
+  }
+
+  ## boot==0 is the original data, so skip resampling the data
+  if(boot==0){
+    ## The original data, whether miller or not
+    dat <- SS_readdat(file.path('models', model.name,'data.ss'),
+                      verbose=TRUE, section=1)
+  } else {
+    ## resample using SS or miller approach
+    if(!file.exists(file.path('models',model.name)))
+      stop("model not found")
+    ## The two types of bootstraps are implemented here
+    if(!miller){
+      dat <- SS_readdat(file.path('models', model.name,'data.ss_new'),
+                        verbose=TRUE, section=2+boot)
+    } else {
+      ## Original data
+      dat0 <- SS_readdat(file.path('models', model.name,'data.ss'),
+                         verbose=TRUE, section=1)
+      ## This resamples the observed data
+      dat <- sample_miller_boot(boot=boot, datlist=dat0, test=FALSE)
+    }
   }
   ## Prepare folder to run this iteration
   dir.create(wd, showWarnings=TRUE, recursive=TRUE)
