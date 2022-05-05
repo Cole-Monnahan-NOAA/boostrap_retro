@@ -48,12 +48,12 @@ results_afsc %>% group_by(model,miller, baseyear) %>%
 
 ## Quick plot of Miller vs SS bootstrap
 g <- results_afsc %>%
-  filter(metric!='Rec') %>%
+ # filter(metric!='Rec') %>%
   ggplot(aes(baseyear, y=rho, fill=miller)) + geom_violin() +
   facet_grid(metric~model, scales='free') + geom_hline(yintercept=0, col='red')+
   geom_point(data=rho_obs, col='red',pch='-', size=10) +
   coord_cartesian(ylim=c(-.5,.5))
-ggsave('plots/results_miller.png', g, width=12, height=7)
+ggsave('plots/results_miller2.png', g, width=12, height=7)
 
 ## ## Are the variances the same?
 ## results_afsc %>% mutate(miller=replace_na(miller, FALSE),
