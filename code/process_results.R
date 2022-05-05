@@ -12,9 +12,10 @@ results <- list.files('results', pattern='boot_retro',
            TRUE ~ 'Normal'),
          baseyear=factor(baseyear),
          ## Split names into three metrics across types
-         metric=gsub('WoodHole_|AFSC_Hurtado_|.all', '',metric)) %>%
+         metric=gsub('WoodHole_|AFSC_Hurtado_|.all', '',metric))
+## %>%
   ## the recruitment ones are not working?
-  filter(metric!='Rec')
+ ##  filter(metric!='Rec')
 
 ## Which Rho metric to use?
 results_normal <- filter(results, type=='Normal' & boot>0)
