@@ -1,4 +1,52 @@
 
+#FUNCTION to get results from Report.sso
+get_res<-function(wd, boot, model, miller)
+{
+  library(dplyr)
+  get_ts <- function(rep, peel){
+    ##Get timeseries results
+    ##ssb and apical F
+    ssb_f_ts<-rep$sprseries[rep$sprseries$Yr<=rep$endyr,]
+
+    ##recruitment
+    recr_ts=rep$recruit[rep$recruit$Yr<=rep$endyr,]
+
+    ##Create data frames
+    ssb<-data.frame(assess_yr=rep$endyr, name='ssb', peel=peel, year=ssb_f_ts$Yr, value=ssb_f_ts$SSBfished)
+    ap_f<-data.frame(assess_yr=rep$endyr, name='f', peel=peel, year=ssb_f_ts$Yr, value=ssb_f_ts$sum_Apical_F)
+    recr<-data.frame(assess_yr=rep$endyr, name='recr', peel=peel,year=recr_ts$Yr,value=recr_ts$pred_recr)
+
+    ##Combine all timeseries results
+    ts_res<-bind_rows(ssb,ap_f,recr)
+    return(ts_res)
+  }
+
+  get_mles <- function(rep, peel){
+    ##Get parameters
+    pars<-rep$parameters
+    pars_res <- data.frame(assess_yr=rep$endyr, par=pars$Label, miller=miller,
+                         peelsl=peel, value=pars$Value)
+    return(pars_res)
+  }
+
+  dir <- list.files(file.path(wd, 'retros'), pattern='retro',
+                    full.names=TRUE)
+  peels <- gsub('retro','', x=list.files(file.path(wd, 'retros'),
+                                         pattern='retro')) %>% as.numeric %>% abs
+  stopifnot(length(peels)>0)
+  Models <- SSgetoutput(dirvec=dir, getcovar=FALSE)
+  pars_res <- lapply(1:length(Models), function(ii) {
+    get_mles(Models[[ii]], peels[ii])
+  }) %>% bind_rows %>% cbind(boot=boot, model=model, miller=miller)
+  write.csv(pars_res, file=file.path(wd,"parameter_res.csv"), row.names=FALSE)
+  ts_res <- lapply(1:length(Models), function(ii) {
+    get_ts(Models[[ii]], peels[ii])
+  }) %>% bind_rows %>% cbind(boot=boot, model=model, miller=miller)
+  write.csv(ts_res, file=file.path(wd,"ts_res.csv"), row.names=FALSE)
+}
+
+
+
 #' Generate a Miller bootstrap data list
 #'
 #' @param boot The bootstrap number (used as seed)
@@ -171,6 +219,9 @@ run_SS_boot_iteration <- function(boot, model.name,
   pdf(file=file.path(wd, 'retro_plots.pdf'), onefile=TRUE,
       width=7, height=9)
   rhos <- list(); k <- 1
+  ## Read in and save timeseries and parameter estimates for all
+  ## peels
+  get_res(wd, boot, model.name, miller)
   for(peelyr in 0:7){
     peels.tmp <- peels[(1+peelyr):(peelyr+8)] # peel #
     peels.ind <- which(peels %in% peels.tmp)  # peel index
@@ -199,7 +250,6 @@ run_SS_boot_iteration <- function(boot, model.name,
   tmp <- ifelse(miller, 'results_miller_rho.csv', 'results_rho.csv')
   rhos <- do.call(rbind, rhos)
   write.csv(x=rhos, file=file.path(wd, tmp), row.names=FALSE)
-
   if(clean.files){
     unlink(file.path(wd, 'retros'), recursive=TRUE)
     file.remove(file.path(wd, 'retroSummary.RDS'))
