@@ -8,8 +8,8 @@ packageVersion('r4ss') #  '1.42.0'
 source('code/functions.R')
 
 ## For each boostrap data set, run a retrospective analysis
-Nreps <- 300
-reps <- 1:Nreps
+Nreps <- 500
+reps <- 0:Nreps # 0 is special code for original data
 Npeels <- 14
 peels <- 0:-Npeels
 
@@ -28,14 +28,15 @@ sfExportAll()
 
 ## ## Run one in serial as a test
 ## test <- run_SS_boot_iteration(1, 'EBS_Pcod', TRUE)
+
+
 run_model(reps, model.name='EBS_Pcod')
-run_model(reps, model.name='GOA_Pcod')
-run_model(reps, model.name='GOA_NRS')
-
-
-## Rerun using the Miller approach
 run_model(reps, model.name='EBS_Pcod', miller=TRUE)
-run_model(reps, model.name='GOA_Pcod', miller=TRUE)
+## run_model(reps, model.name='GOA_Pcod_prior')
+## run_model(reps, model.name='GOA_Pcod_prior', miller=TRUE)
+run_model(reps, model.name='GOA_Pcod_noprior')
+run_model(reps, model.name='GOA_Pcod_noprior', miller=TRUE)
+run_model(reps, model.name='GOA_NRS')
 run_model(reps, model.name='GOA_NRS', miller=TRUE)
 
 source('code/process_results.R')
@@ -45,6 +46,9 @@ source('code/process_results.R')
 results_afsc %>% group_by(model,miller, baseyear) %>%
   filter(metric=='SSB') %>% summarize(count=n()) %>%
   pivot_wider(c(model, miller),  names_from='baseyear', values_from='count')
+
+filter(results_afsc, boot==1 & grepl('GOA_Pcod', x=model) &
+                     metric=='SSB' & baseyear=='2015')
 
 ## Quick plot of Miller vs SS bootstrap
 g <- results_afsc %>%
