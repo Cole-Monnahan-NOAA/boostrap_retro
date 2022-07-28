@@ -38,68 +38,65 @@ test2 <- pars %>%
   dplyr::mutate(re=(value-value[boot==0])/value[boot==0])
 
 ts=ts[,1:8]
-ts2_tmp <- ts %>%
-  dplyr::group_by(model, assess_yr,year, peel,miller) %>%
+ts2 <- ts %>%
+  dplyr::group_by(model,name, year, peel,miller) %>%
   dplyr::mutate(re=(value-value[boot==0])/value[boot==0],keep_yr=assess_yr-peel)
 
+#check on whether rel error is correctly calculated###############################
+b0=ts %>% filter(boot==0)%>% rename(value0=value) %>% select(-boot)
+b=ts %>% filter(boot>0)
+b2=merge(b0,b,all.y=TRUE)
+b2$re=(b2$value-b2$value0)/b2$value0
+
+mean(b2$re)
+##################################################################################
 ts3 <- ts2 %>% dplyr::filter(year<=keep_yr)
 
 ts4 <- ts3 %>%
   dplyr::filter(boot>0) %>%
   dplyr::group_by(model,year,peel,name,miller) %>%
-  dplyr::summarise(x = quantile(re, c(0.25, 0.5, 0.75)), q = c(0.25, 0.5, 0.75))
+  dplyr::summarise(x = quantile(re, c(0.025, 0.5, 0.975)), q = c(0.025, 0.5, 0.975))
 
 ts5 <- tidyr::spread(ts4,q,x)
 names(ts5)=c(names(ts5[1:5]),'lci','med','uci')
 
-ts5 %>% ggplot(aes(x=year,y=med,color=model))
-
-mill=sort(unique(ts5$miller))
 met=sort(unique(ts5$name))
-for(i in 1:length(mill)){
-  for(j in 1:length(met)){
-    print("i="); print(mill[i])
-    print("j="); print(met[j])
+for(j in 1:length(met))
+{
+    g=ts5 %>% filter(name==met[j]) %>% mutate(peel=as.factor(peel))
 
-    g=ts5 %>% filter(name==met[j] & miller==mill[i])
-
-      ggplot(data=g,aes(x=year, y=med, color=model)) + geom_line(aes(x=year, y=med, color=model))+
-      geom_ribbon(aes(ymin=lci,ymax=uci, fill=model),color="grey70",alpha=0.3)+ facet_wrap(.~peel)+
-      geom_hline(yintercept=0,color="red")+
+    ggplot(data=g,aes(x=year, y=med, color=peel)) + geom_line(aes(x=year, y=med, color=peel))+
+      geom_ribbon(aes(ymin=lci,ymax=uci, fill=peel),alpha=0.3)+ facet_wrap(miller~model)+
+      coord_cartesian(ylim=c(-1,1))+geom_hline(yintercept=0,color="red")+
       ylab(paste("Relative error in ", met[j],sep=" ")) + xlab("Year")
-    ggsave(here::here('plots',paste0('RelError_',met[j],'_',mill[i],'.png')),units='in',width=8,height=8)
-  }
+    ggsave(here::here('plots',paste0('RelError_',met[j],'.png')),units='in',width=8,height=8)
 }
 
 
-mods=sort(unique(ts3$model))
-met=sort(unique(ts3$name))
-for(i in 1:length(mods)){
-  for(j in 1:length(met)){
-    print("i="); print(mods[i])
-    print("j="); print(met[j])
+#mods=sort(unique(ts3$model))
+#met=sort(unique(ts3$name))
+#for(i in 1:length(mods)){
+#  for(j in 1:length(met)){
+#
+#    ts3 %>% filter(boot>0 & name==met[j] & miller==FALSE & model==mods[i]) %>%
+#      ggplot(aes(x=as.factor(year), y=re)) +
+#      geom_boxplot() + facet_wrap('peel')+ geom_hline(yintercept=0,color="red")+
+#      ylab("Relative error") + xlab("Year")
+#      ggsave(here::here('plots',paste0(mods[i],'_',met[j],'.png')),units='in',width=8,height=8)
+#  }
+#}
 
-    ts3 %>% filter(boot>0 & name==met[j] & miller==FALSE & model==mods[i]) %>%
-      ggplot(aes(x=as.factor(year), y=re)) +
-      geom_boxplot() + facet_wrap('peel')+ geom_hline(yintercept=0,color="red")+
-      ylab("Relative error") + xlab("Year")
-      ggsave(here::here('plots',paste0(mods[i],'_',met[j],'.png')),units='in',width=8,height=8)
-  }
-}
-
-mods=sort(unique(ts3$model))
-met=sort(unique(ts3$name))
-for(i in 1:length(mods)){
-  for(j in 1:length(met)){
-    print("i="); print(mods[i])
-    print("j="); print(met[j])
-
-    ts3 %>% filter(boot>0 & name==met[j] & miller==TRUE & model==mods[i]) %>%
-      ggplot(aes(x=as.factor(year), y=re)) +
-      geom_boxplot() + facet_wrap('peel')+ geom_hline(yintercept=0,color="red")+
-      ylab("Relative error") + xlab("Year")
-    ggsave(here::here('plots',paste0(mods[i],'_',met[j],'MillerT.png')),units='in',width=8,height=8)
-  }
-}
+#mods=sort(unique(ts3$model))
+#met=sort(unique(ts3$name))
+#for(i in 1:length(mods)){
+#  for(j in 1:length(met)){
+#
+ #   ts3 %>% filter(boot>0 & name==met[j] & miller==TRUE & model==mods[i]) %>%
+  #    ggplot(aes(x=as.factor(year), y=re)) +
+   #   geom_boxplot() + facet_wrap('peel')+ geom_hline(yintercept=0,color="red")+
+    #  ylab("Relative error") + xlab("Year")
+#    ggsave(here::here('plots',paste0(mods[i],'_',met[j],'MillerT.png')),units='in',width=8,height=8)
+#  }
+#}
 
 
