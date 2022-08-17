@@ -28,7 +28,7 @@ results_woodshole <- filter(results, type=='WoodsHole' & boot>0)
 rho_obs <- results %>% filter(boot==0 & type=='AFSC')
 
 
-if(TRUE){
+if(FALSE){
   message("skipping MLE calculations this time")
 } else {
   message("Starting MLE processing, very slow...")
@@ -39,14 +39,11 @@ if(TRUE){
   par.results <- ff %>% lapply(read.csv) %>% bind_rows()
   ## Only need this b/c of old bugs in get_res function. Delete
   ## next time a full run is done
-  par.results <- par.results %>%  rename(peels=peelsl) %>% select(-miller.1)
-
-  ## only keep the models we're going to use
-  par.results$model %>% unique
-  par.results <- par.results %>%
-    filter(model %in% c('EBS_Pcod3', "GOA_NRS", "GOA_Pcod_noprior"))
+  par.results <- par.results %>%  rename(peels=peelsl) %>%
+    select(-miller.1) %>%
+    group_by(model, par, assess_yr, peels, miller) %>%
+    mutate(re=(value-value[boot==0])/value[boot==0])
   saveRDS(par.results, file='results/par.results.RDS')
-
 
   ## get timeseries
   ff <- list.files('runs', pattern='ts_res',
@@ -61,7 +58,6 @@ if(TRUE){
   ## some quick processing, any year after keep_yr has no data so
   ## throw it out
   ts <- ts.results %>%
-    filter(model %in% c('EBS_Pcod3', "GOA_NRS", "GOA_Pcod_noprior")) %>%
     group_by(model,name, year, peel,miller) %>%
     mutate(re=(value-value[boot==0])/value[boot==0],keep_yr=assess_yr-peel) %>%
     filter(year<=keep_yr) %>% ungroup
