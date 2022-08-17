@@ -24,8 +24,8 @@ get_res<-function(wd, boot, model, miller)
   get_mles <- function(rep, peel){
     ##Get parameters
     pars<-rep$parameters
-    pars_res <- data.frame(assess_yr=rep$endyr, par=pars$Label, miller=miller,
-                         peelsl=peel, value=pars$Value)
+    pars_res <- data.frame(assess_yr=rep$endyr, par=pars$Label,
+                         peels=peel, value=pars$Value)
     return(pars_res)
   }
 
