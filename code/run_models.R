@@ -2,7 +2,7 @@
 ## For each boostrap data set, run a retrospective analysis
 Nreps <- 500
 reps <- 0:Nreps # 0 is special code for original data
-Npeels <- 14
+Npeels <- 1
 peels <- 0:-Npeels
 
 ## Setup to run parallel, saving a single core free.
@@ -29,8 +29,8 @@ sfExportAll()
 ## original data file (based on D-M fit from the bootstrap data)
 ## and then switched to the multinomial. See the ebs_comparison
 ## folder for what changed when this happened.
-run_model(reps, model.name='EBS_Pcod3')
-run_model(reps, model.name='EBS_Pcod3', miller=TRUE)
+run_model(reps, model.name='EBS_Pcod4')
+run_model(reps, model.name='EBS_Pcod4', miller=TRUE)
 ## run_model(reps, model.name='GOA_Pcod_prior')
 ## run_model(reps, model.name='GOA_Pcod_prior', miller=TRUE)
 run_model(reps, model.name='GOA_Pcod_noprior')

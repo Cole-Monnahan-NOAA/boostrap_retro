@@ -33,12 +33,16 @@ str(results_afsc)                       # the main data to use
 source("code/make_plots.R")
 
 
-## ## old code to check if updating EBS_Pcod had a big effect or
-## m1 <- SS_output('models/EBS_Pcod', verbose=FALSE)
-## m2 <- SS_output('models/EBS_Pcod2', verbose=FALSE, covar=FALSE)
-## m3 <- SS_output('models/EBS_Pcod3', verbose=FALSE, covar=FALSE)
-## x <- SSsummarize(biglist=list(m1=m1,m2=m2,m3=m3))
-## SSplotComparisons(x, png=TRUE,
-##                   plotdir='models/ebs_comparison',
-##                   legendlabels=c('orig', 'reweight', 'DM off'))
+## old code to check if updating EBS_Pcod had a big effect or
+m1 <- SS_output('models/EBS_Pcod', verbose=FALSE)
+m2 <- SS_output('models/EBS_Pcod2', verbose=FALSE, covar=FALSE)
+m3 <- SS_output('models/EBS_Pcod3', verbose=FALSE, covar=FALSE)
+m4 <- SS_output('models/EBS_Pcod4', verbose=FALSE, covar=TRUE)
+m5 <- SS_output('runs/EBS_Pcod4/boot_167/retros/retro0', verbose=FALSE, covar=FALSE)
+SS_plots(m4)
+x <- SSsummarize(biglist=list(m1=m1,m2=m2,m3=m3,m4,m5))
+SSplotComparisons(x, png=TRUE,
+                  plotdir='models/ebs_comparison',
+                  legendlabels=c('orig', 'reweight', 'DM off',
+                                 'bias ramp', 'arb boot'))
 
