@@ -3,18 +3,24 @@ library(tidyverse)
 library(r4ss)
 library(snowfall)
 library(ggplot2)
+## devtools::install_github("afsc-assessments/GOApollock", ref='fix_dat_fns')
+library(GOApollock)
 theme_set(theme_bw())
 packageVersion('r4ss') #  '1.42.0'
 source('code/functions.R')
+## GOA pollock is a bespoke model and setup differently
+pkdatlist <- readRDS("models/GOA_pollock/datfile.RDS")
+pkreplist <- readRDS("models/GOA_pollock/repfile.RDS")
+source('code/functions_pollock.R')
 
 ## For each boostrap data set, run a retrospective analysis
-Nreps <- 500
+Nreps <- 1000
 reps <- 0:Nreps # 0 is special code for original data
 Npeels <- 14
 peels <- 0:-Npeels
 
 ## Setup to run parallel, saving a single core free.
-cpus <- parallel::detectCores()-2
+cpus <- parallel::detectCores()-4
 sfStop()
 sfInit( parallel=TRUE, cpus=cpus)
 sfExportAll()
@@ -38,6 +44,16 @@ run_model(reps, model.name='GOA_Pcod_noprior')
 run_model(reps, model.name='GOA_Pcod_noprior', miller=TRUE)
 run_model(reps, model.name='GOA_NRS')
 run_model(reps, model.name='GOA_NRS', miller=TRUE)
+
+## run_pollock_model(111,datlist=pkdatlist, replist=pkreplist,
+##                   model.name='GOA_pollock', miller=TRUE, clean.files=FALSE)
+
+run_pollock_model(reps,datlist=pkdatlist, replist=pkreplist,
+                  model.name='GOA_pollock', miller=TRUE, clean.files=FALSE)
+run_pollock_model(reps,datlist=pkdatlist, replist=pkreplist,
+                  model.name='GOA_pollock', miller=FALSE, clean.files=FALSE)
+
+
 
 source('code/process_results.R')
 

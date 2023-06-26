@@ -28,6 +28,54 @@ results_woodshole <- filter(results, type=='WoodsHole' & boot>0)
 rho_obs <- results %>% filter(boot==0 & type=='AFSC')
 
 
+results_pk <- list.files('results', pattern='GOA_pollock',
+                      full.names=TRUE) %>%
+  lapply(FUN=function(x) cbind(readRDS(x))) %>%
+  bind_rows() %>%
+  pivot_longer(cols=-c('model', 'boot', 'miller', 'baseyear'),
+               names_to='metric',
+               values_to='rho')
+rho_obs_pk<- results_pk %>% filter(boot==0)
+ggplot(results_pk, aes(factor(baseyear), rho)) + geom_violin() +
+  facet_wrap('miller', nrow=2, scales='free') +
+  geom_point(data=rho_obs_pk, color=2)
+
+results_pk %>% filter(!miller) %>% arrange(desc(abs(rho)))
+
+reps <- readRDS("runs/GOA_pollock/boot_0/retroModels.RDS")
+
+ii <- lapply(c(1,2,3,6), function(i)
+  cbind(survey=i, mymelt(reps, paste0('Survey_',i,'_expected_index')))) %>%
+  bind_rows
+qq <- lapply(c(1,2,3,6), function(i)
+ cbind(survey=i, mymelt(reps, paste0('Survey_',i,'_q')))) %>%
+  bind_rows
+
+rr <- mymelt(reps, 'Recruits')
+ggplot(ii, aes(year, value, group=factor(model))) + geom_line() +
+  facet_wrap('survey') + scale_y_log10()
+
+ggplot(qq, aes(year, value, group=factor(model))) + geom_line() +
+  facet_wrap('survey')
+
+ggplot(rr, aes(year, value, color=(model), group=factor(model))) + geom_line()
+
+
+
+out <- lapply(0:20, meltindices) %>% bind_rows()
+
+meltindices <- function(boot) {
+  dd <- read_pk_dat(filename='goa_pk.dat', path=paste0('runs/GOA_pollock/boot_',boot), writedat=TRUE)
+ rbind(with(dd, data.frame(survey=1, year=srvyrs1, index=indxsurv1)),
+                 with(dd, data.frame(survey=2, year=srvyrs2, index=indxsurv2)),
+                 with(dd, data.frame(survey=3, year=srvyrs3, index=indxsurv3)),
+                 with(dd, data.frame(survey=6, year=srvyrs6,
+                                     index=indxsurv6))) %>% cbind(boot=boot)
+}
+
+ggplot(out, aes(year,index, group=boot, color=factor(boot))) + geom_line() + facet_wrap('survey')
+
+
 if(FALSE){
   message("skipping MLE calculations this time")
 } else {
