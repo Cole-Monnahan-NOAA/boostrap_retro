@@ -98,6 +98,7 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
   saveRDS(reps, file=paste0(file.path(wd,'retroModels.RDS')))
   pdf(file=file.path(wd, 'retro_plots.pdf'), onefile=TRUE,
       width=7, height=9)
+  rhos_f <- list()
   rhos <- list(); k <- 1
   ## Read in and save timeseries and parameter estimates for all
   ## peels: TO DO!!
@@ -108,6 +109,36 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
     peels.ind <- which(peels %in% peels.tmp)  # peel index
     ## Do some heavy processing to plot quickly
     ## Pluck out a subset of 7 peels and calculate rho
+    f <- mymelt(reps[peels.ind], 'Fishing_mortalities') %>%
+      rename(peel=model, F_mort=value) %>%
+      filter(peel %in% abs(peels.tmp)) %>%
+      group_by(year) %>%
+      mutate(peel=peel-min(peel)) %>%
+      mutate(F_Pct_Diff=100*(F_mort-F_mort[peel==min(peel)])/F_mort[peel==min(peel)]) %>%
+      ungroup()
+
+    rho_f <- f %>%
+      filter(max(year) - peel == year & year != max(year)) %>% pull(F_Pct_Diff)
+    rhos_f[[k]] <- data.frame(model='GOApollock',
+                            baseyear=2022-peelyr, miller=miller, boot=boot, F=mean(rho_f/100))
+    rho_f.lab <- paste0("Mohn's rho= ", round(mean(rho_f/100),3))
+    #plot Fishing mort rho
+    thisyear <- 2022
+    g1 <- ggplot(f, aes(year, F_mort, group=peel, color=factor(peel))) + geom_line() +
+      labs(x=NULL, y='Fishing mortality', color='Peel')
+    g1 <- g1 + geom_point(data=filter(f, thisyear-peel==year), size=2) +
+      theme(legend.position='none') + annotate('label', x=2010,y=.5, label=rho_f.lab)
+    g2 <- ggplot(f, aes(year, F_Pct_Diff, group=peel, color=factor(peel))) + geom_line() +
+      labs(x=NULL, y='Percent difference from peel 0', color=NULL)
+    g2 <- g2 + geom_point(data=filter(f, thisyear-peel==year), size=2)+
+      theme(legend.position=c(.35,.85)) +
+      guides(color=guide_legend(nrow=2))
+    g1 <- g1+xlim(1970,2022) +labs(title=paste('Base year=', 2022-peelyr))
+    g2 <- g2+xlim(1970,2022)
+    g <- cowplot::plot_grid(g1,g2, nrow=2)
+    print(g)
+
+
     ssb <- mymelt(reps[peels.ind], 'Expected_spawning_biomass') %>%
       rename(peel=model, SSB=value) %>%
       filter(peel %in% abs(peels.tmp)) %>%
@@ -120,6 +151,7 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
     rhos[[k]] <- data.frame(model='GOApollock',
                             baseyear=2022-peelyr, miller=miller, boot=boot, SSB=mean(rho/100))
     rho.lab <- paste0("Mohn's rho= ", round(mean(rho/100),3))
+
     ## Plot it
     thisyear <- 2022
     g1 <- ggplot(ssb, aes(year, SSB, group=peel, color=factor(peel))) + geom_line() +

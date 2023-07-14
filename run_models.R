@@ -22,7 +22,7 @@ peels <- 0:-Npeels
 ## Setup to run parallel, saving a single core free.
 cpus <- parallel::detectCores()-4
 sfStop()
-sfInit( parallel=TRUE, cpus=cpus)
+sfInit( parallel=FALSE, cpus=cpus)
 sfExportAll()
 
 ### Run full in parallel for all models. This assumes that the
