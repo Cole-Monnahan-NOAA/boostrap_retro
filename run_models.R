@@ -14,9 +14,9 @@ pkreplist <- readRDS("models/GOA_pollock/repfile.RDS")
 source('code/functions_pollock.R')
 
 ## For each boostrap data set, run a retrospective analysis
-Nreps <- 1000
+Nreps <- 1 #1000
 reps <- 0:Nreps # 0 is special code for original data
-Npeels <- 14
+Npeels <- 2#14
 peels <- 0:-Npeels
 
 ## Setup to run parallel, saving a single core free.

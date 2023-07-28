@@ -52,6 +52,8 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
   } else {
     wd <- file.path('runs', model.name, paste0("millerboot_", boot))
   }
+  #directory for time series and parameter results
+  res.wd<-file.path('results')
   ## Prepare folder to run this iteration
   dir.create(wd, showWarnings=TRUE, recursive=TRUE)
   blank.files <- list.files(file.path('models', model.name,'blank'), full.names=TRUE)
@@ -82,6 +84,7 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
   old.wd <- getwd()
   on.exit(setwd(old.wd))
   setwd(wd)
+  ts_res<-data.frame();
   reps <- list(); k <- 1
   for(pl in abs(peels)){
     trash <- suppressWarnings(file.remove('goa_pk.rep'))
@@ -90,8 +93,35 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
       reps[[k]] <- read_pk_rep(version=pl, endyr=2022-pl)
     else
       warning("failed with boot=", boot, ", peel=", pl)
+    #save time series results
+    #pull quants of interest
+    ssb_ts = as.vector(unlist(reps[[k]]['Expected_spawning_biomass']))
+    ts_f = as.vector(unlist(reps[[k]]['Fishing_mortalities']))
+    recr_ts = as.vector(unlist(reps[[k]]['Recruits']))
+    yrs=as.vector(unlist(reps[[k]]['years']))
+    ayr=max(as.numeric(unlist(reps[[k]]['years'])))+pl
+
+    ##Create data frames
+    ssb<-data.frame(assess_yr=rep(ayr,length(yrs)), name=rep('ssb',length(yrs)), peel=rep(pl,length(yrs)), year=yrs, value=ssb_ts,boot=k,model=model.name,miller=miller)
+    ap_f<-data.frame(assess_yr=rep(ayr,length(yrs)), name=rep('f',length(yrs)), peel=rep(pl,length(yrs)), year=yrs, value=ts_f,boot=k,model=model.name,miller=miller)
+    recr<-data.frame(assess_yr=rep(ayr,length(yrs)), name=rep('recr',length(yrs)), peel=rep(pl,length(yrs)),year=yrs,value=recr_ts,boot=k,model=model.name,miller=miller)
+
+    ##Combine all timeseries results
+    ts_res<-bind_rows(ts_res,ssb,ap_f,recr)
+
     k <- k+1
   }
+#  browser()
+  setwd(old.wd)
+  setwd(res.wd)
+  if(file.exists(paste0(model.name,"ts.results.csv"))){
+      write.table(ts_res,file=paste0(model.name,"ts.results.csv"),sep=",",row.names=FALSE,col.names=FALSE,append=TRUE)
+  }
+ if(!file.exists(paste0(model.name,"ts.results.csv"))){
+# #   file(file.path(res.wd,paste0(model.name,"ts.results.csv")))
+    write.table(ts_res,file=paste0(model.name,"ts.results.csv"),sep=',',row.names=FALSE,col.names=FALSE,append=FALSE)
+  }
+
   setwd(old.wd)
   clean_pk_dir(wd)
   ## Run retro for this bootstrap one
@@ -103,12 +133,14 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
   ## Read in and save timeseries and parameter estimates for all
   ## peels: TO DO!!
   library(ggplot2)
+
   theme_set(theme_bw())
   for(peelyr in 0:7){
     peels.tmp <- peels[(1+peelyr):(peelyr+8)] # peel #
     peels.ind <- which(peels %in% peels.tmp)  # peel index
     ## Do some heavy processing to plot quickly
     ## Pluck out a subset of 7 peels and calculate rho
+    browser()
     f <- mymelt(reps[peels.ind], 'Fishing_mortalities') %>%
       rename(peel=model, F_mort=value) %>%
       filter(peel %in% abs(peels.tmp)) %>%
