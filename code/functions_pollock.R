@@ -85,6 +85,7 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
   on.exit(setwd(old.wd))
   setwd(wd)
   ts_res<-data.frame();
+  mle_res<-data.frame();
   reps <- list(); k <- 1
   for(pl in abs(peels)){
     trash <- suppressWarnings(file.remove('goa_pk.rep'))
@@ -93,18 +94,10 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
       reps[[k]] <- read_pk_rep(version=pl, endyr=2022-pl)
     else
       warning("failed with boot=", boot, ", peel=", pl)
-    nms <- c('mean_log_recruit', 'log_slp1_fsh_mean',
-             'inf1_fsh_mean', 'log_slp2_fsh_mean', 'inf2_fsh_mean',
-             'log_slp2_srv1', 'inf2_srv1',
-             'log_slp1_srv2', 'inf1_srv2',
-             'log_slp1_srv3', 'inf1_srv3',
-             'log_q1_mean', 'log_q2_mean', 'log_q3_mean',
-             'log_q4', 'log_q5', 'log_q6')
-    mles <- read_pk_std(endyr=2022-pl, version=boot) %>%
-      filter(name %in% nms) %>% select(-year, -i)
-    mles
+    #browser()
     #save time series results
     #pull quants of interest
+
     ssb_ts = as.vector(unlist(reps[[k]]['Expected_spawning_biomass']))
     ts_f = as.vector(unlist(reps[[k]]['Fishing_mortalities']))
     recr_ts = as.vector(unlist(reps[[k]]['Recruits']))
@@ -118,19 +111,43 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
 
     ##Combine all timeseries results
     ts_res<-bind_rows(ts_res,ssb,ap_f,recr)
+ #   browser()
+    nms <- c('mean_log_recruit', 'log_slp1_fsh_mean',
+             'inf1_fsh_mean', 'log_slp2_fsh_mean', 'inf2_fsh_mean',
+             'log_slp2_srv1', 'inf2_srv1',
+             'log_slp1_srv2', 'inf1_srv2',
+             'log_slp1_srv3', 'inf1_srv3',
+             'log_q1_mean', 'log_q2_mean', 'log_q3_mean',
+             'log_q4', 'log_q5', 'log_q6')
+    mles <- read_pk_std(endyr=2022-pl, version=boot) %>%
+      filter(name %in% nms) %>% select(-year, -i) %>%
+      mutate(assess_yr=ayr,peel=pl,boot=k,model=model.name,miller=miller) %>%
+      select(assess_yr,name,peel,est,boot,model,miller)
+    names(mles)[2]="par"
+    names(mles)[4]="value"
+
+    mle_res=bind_rows(mle_res,mles)
 
     k <- k+1
   }
 #  browser()
   setwd(old.wd)
   setwd(res.wd)
-  if(file.exists(paste0(model.name,"ts.results.csv"))){
+  ts_fname=paste0(model.name,"ts.results.csv")
+  if(file.exists(ts_fname)){
       write.table(ts_res,file=paste0(model.name,"ts.results.csv"),sep=",",row.names=FALSE,col.names=FALSE,append=TRUE)
   }
- if(!file.exists(paste0(model.name,"ts.results.csv"))){
-# #   file(file.path(res.wd,paste0(model.name,"ts.results.csv")))
-    write.table(ts_res,file=paste0(model.name,"ts.results.csv"),sep=',',row.names=FALSE,col.names=FALSE,append=FALSE)
+ if(!file.exists(ts_fname)){
+    write.table(ts_res,file=paste0(model.name,"ts.results.csv"),sep=',',row.names=FALSE,col.names=TRUE,append=FALSE)
+ }
+
+  if(file.exists(paste0(model.name,"par.results.csv"))){
+    write.table(mle_res,file=paste0(model.name,"par.results.csv"),sep=",",row.names=FALSE,col.names=FALSE,append=TRUE)
   }
+  if(!file.exists(paste0(model.name,"par.results.csv"))){
+      write.table(mle_res,file=paste0(model.name,"par.results.csv"),sep=',',row.names=FALSE,col.names=TRUE,append=FALSE)
+  }
+
 
   setwd(old.wd)
   clean_pk_dir(wd)
