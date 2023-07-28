@@ -88,11 +88,21 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
   reps <- list(); k <- 1
   for(pl in abs(peels)){
     trash <- suppressWarnings(file.remove('goa_pk.rep'))
-    system(paste('goa_pk -retro',pl, '-nohess -display 0'))
+    system(paste('goa_pk -retro',pl, '-display 0'))
     if(file.exists('goa_pk.rep'))
       reps[[k]] <- read_pk_rep(version=pl, endyr=2022-pl)
     else
       warning("failed with boot=", boot, ", peel=", pl)
+    nms <- c('mean_log_recruit', 'log_slp1_fsh_mean',
+             'inf1_fsh_mean', 'log_slp2_fsh_mean', 'inf2_fsh_mean',
+             'log_slp2_srv1', 'inf2_srv1',
+             'log_slp1_srv2', 'inf1_srv2',
+             'log_slp1_srv3', 'inf1_srv3',
+             'log_q1_mean', 'log_q2_mean', 'log_q3_mean',
+             'log_q4', 'log_q5', 'log_q6')
+    mles <- read_pk_std(endyr=2022-pl, version=boot) %>%
+      filter(name %in% nms) %>% select(-year, -i)
+    mles
     #save time series results
     #pull quants of interest
     ssb_ts = as.vector(unlist(reps[[k]]['Expected_spawning_biomass']))
@@ -133,8 +143,9 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
   ## Read in and save timeseries and parameter estimates for all
   ## peels: TO DO!!
   library(ggplot2)
-
+  library(dplyr)
   theme_set(theme_bw())
+  if(length(peels)>8){
   for(peelyr in 0:7){
     peels.tmp <- peels[(1+peelyr):(peelyr+8)] # peel #
     peels.ind <- which(peels %in% peels.tmp)  # peel index
@@ -169,8 +180,6 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
     g2 <- g2+xlim(1970,2022)
     g <- cowplot::plot_grid(g1,g2, nrow=2)
     print(g)
-
-
     ssb <- mymelt(reps[peels.ind], 'Expected_spawning_biomass') %>%
       rename(peel=model, SSB=value) %>%
       filter(peel %in% abs(peels.tmp)) %>%
@@ -200,6 +209,7 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
     g <- cowplot::plot_grid(g1,g2, nrow=2)
     print(g)
     k <- k+1
+  }
   }
   dev.off()
   tmp <- ifelse(miller, 'results_miller_rho.csv', 'results_rho.csv')

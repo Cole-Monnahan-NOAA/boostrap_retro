@@ -16,13 +16,13 @@ source('code/functions_pollock.R')
 ## For each boostrap data set, run a retrospective analysis
 Nreps <- 1 #1000
 reps <- 0:Nreps # 0 is special code for original data
-Npeels <- 2#14
+Npeels <- 9
 peels <- 0:-Npeels
 
 ## Setup to run parallel, saving a single core free.
 cpus <- parallel::detectCores()-4
 sfStop()
-sfInit( parallel=FALSE, cpus=cpus)
+sfInit( parallel=0, cpus=cpus)
 sfExportAll()
 
 ### Run full in parallel for all models. This assumes that the
