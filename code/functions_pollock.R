@@ -89,7 +89,8 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
   reps <- list(); k <- 1
   for(pl in abs(peels)){
     trash <- suppressWarnings(file.remove('goa_pk.rep'))
-    system(paste('goa_pk -retro',pl, '-display 0'))
+    system(paste('goa_pk -nohess -retro',pl, '-display 0'))
+    system(paste('goa_pk -nohess -retro',pl, '-display 0 -binp goa_pk.bar'))
     if(file.exists('goa_pk.rep'))
       reps[[k]] <- read_pk_rep(version=pl, endyr=2022-pl)
     else
@@ -119,15 +120,12 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
              'log_slp1_srv3', 'inf1_srv3',
              'log_q1_mean', 'log_q2_mean', 'log_q3_mean',
              'log_q4', 'log_q5', 'log_q6')
-    mles <- read_pk_std(endyr=2022-pl, version=boot) %>%
-      filter(name %in% nms) %>% select(-year, -i) %>%
-      mutate(assess_yr=ayr,peel=pl,boot=k,model=model.name,miller=miller) %>%
-      select(assess_yr,name,peel,est,boot,model,miller)
-    names(mles)[2]="par"
-    names(mles)[4]="value"
-
+   ## browser()
+    suppressWarnings(mles <- R2admb::read_pars('goa_pk', warn_nonstd_rep = FALSE))
+    mles <- data.frame(assess_yr=ayr, peel=pl, boot=k, par=names(mles$coefficients), value=mles$coefficients,
+                       model=model.name, miller=miller, maxgrad=mles$maxgrad) %>%
+      filter(par %in% nms) %>% select(assess_yr,par,peel,value,boot,model,miller,maxgrad)
     mle_res=bind_rows(mle_res,mles)
-
     k <- k+1
   }
 #  browser()

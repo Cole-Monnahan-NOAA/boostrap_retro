@@ -3,6 +3,7 @@ library(tidyverse)
 library(r4ss)
 library(snowfall)
 library(ggplot2)
+library(R2admb)
 ## devtools::install_github("afsc-assessments/GOApollock", ref='fix_dat_fns')
 library(GOApollock)
 theme_set(theme_bw())
@@ -14,15 +15,15 @@ pkreplist <- readRDS("models/GOA_pollock/repfile.RDS")
 source('code/functions_pollock.R')
 
 ## For each boostrap data set, run a retrospective analysis
-Nreps <- 1 #1000
+Nreps <- 1000
 reps <- 0:Nreps # 0 is special code for original data
 Npeels <- 9
 peels <- 0:-Npeels
 
 ## Setup to run parallel, saving a single core free.
-cpus <- parallel::detectCores()-4
+cpus <- parallel::detectCores()-2
 sfStop()
-sfInit( parallel=0, cpus=cpus)
+sfInit( parallel=TRUE, cpus=cpus)
 sfExportAll()
 
 ### Run full in parallel for all models. This assumes that the
@@ -34,8 +35,6 @@ sfExportAll()
 
 ## ## Run one in serial as a test
 ## test <- run_SS_boot_iteration(1, 'EBS_Pcod', TRUE)
-
-
 run_model(reps, model.name='EBS_Pcod')
 run_model(reps, model.name='EBS_Pcod', miller=TRUE)
 ## run_model(reps, model.name='GOA_Pcod_prior')
@@ -45,18 +44,12 @@ run_model(reps, model.name='GOA_Pcod_noprior', miller=TRUE)
 run_model(reps, model.name='GOA_NRS')
 run_model(reps, model.name='GOA_NRS', miller=TRUE)
 
-## run_pollock_model(111,datlist=pkdatlist, replist=pkreplist,
-##                   model.name='GOA_pollock', miller=TRUE, clean.files=FALSE)
-
 run_pollock_model(reps,datlist=pkdatlist, replist=pkreplist,
-                  model.name='GOA_pollock', miller=TRUE, clean.files=FALSE)
+                  model.name='GOA_pollock', miller=TRUE)
 run_pollock_model(reps,datlist=pkdatlist, replist=pkreplist,
-                  model.name='GOA_pollock', miller=FALSE, clean.files=FALSE)
-
-
+                  model.name='GOA_pollock', miller=FALSE)
 
 source('code/process_results.R')
-
 ## The models have different end years so the baseyears are
 ## different, but check for full replicates
 results_afsc %>% group_by(model,miller, baseyear) %>%
