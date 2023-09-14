@@ -44,6 +44,8 @@ run_model(reps, model.name='GOA_Pcod_noprior', miller=TRUE)
 run_model(reps, model.name='GOA_NRS')
 run_model(reps, model.name='GOA_NRS', miller=TRUE)
 
+## make sure to manually delete runs and result files before
+## rerunning
 run_pollock_model(reps,datlist=pkdatlist, replist=pkreplist,
                   model.name='GOA_pollock', miller=TRUE)
 run_pollock_model(reps,datlist=pkdatlist, replist=pkreplist,
