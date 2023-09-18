@@ -69,7 +69,7 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
     write_dat(datlist=datlist, fileout='goa_pk.dat', path=wd)
   } else {
     ## The two types of bootstraps are implemented here
-    if(!miller){
+    if(miller){
       dat <- sim_dat(datlist=datlist, replist=replist,
                      fileout='goa_pk.dat', path=wd,
                      type='data')
