@@ -166,7 +166,6 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
     peels.ind <- which(peels %in% peels.tmp)  # peel index
     ## Do some heavy processing to plot quickly
     ## Pluck out a subset of 7 peels and calculate rho
-    browser()
     f <- mymelt(reps[peels.ind], 'Fishing_mortalities') %>%
       rename(peel=model, F_mort=value) %>%
       filter(peel %in% abs(peels.tmp)) %>%
@@ -176,9 +175,9 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
       ungroup()
 
     rho_f <- f %>%
-      filter(max(year) - peel == year & year != max(year)) %>% pull(F_Pct_Diff)
-    rhos_f[[k]] <- data.frame(model='GOApollock',
-                            baseyear=2022-peelyr, miller=miller, boot=boot, F=mean(rho_f/100))
+      filter(max(year) - peel == year & year != max(year)) %>%
+      pull(F_Pct_Diff)
+    rho_f <- mean(rho_f/100)
     rho_f.lab <- paste0("Mohn's rho= ", round(mean(rho_f/100),3))
     #plot Fishing mort rho
     thisyear <- 2022
@@ -205,7 +204,9 @@ run_pollock_boot_iteration <- function(boot, model.name='GOA_pollock',
     rho <- ssb %>%
       filter(max(year) - peel == year & year != max(year)) %>% pull(SSB_Pct_Diff)
     rhos[[k]] <- data.frame(model='GOApollock',
-                            baseyear=2022-peelyr, miller=miller, boot=boot, SSB=mean(rho/100))
+                            baseyear=2022-peelyr, miller=miller,
+                            boot=boot, SSB=mean(rho/100),
+                            F=rho_f)
     rho.lab <- paste0("Mohn's rho= ", round(mean(rho/100),3))
 
     ## Plot it
