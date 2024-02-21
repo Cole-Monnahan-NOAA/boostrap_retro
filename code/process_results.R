@@ -1,4 +1,26 @@
 
+message("Processing GOA pollock results: rhos, time series and par estimates...")
+## Read in all final results, including those not necessarily
+## in reps since they could have been run earlier
+ff <- list.files(path='runs/GOA_pollock',
+                 pattern="rho.csv", recursive=TRUE,
+                 full.names=TRUE)
+results <- lapply(ff, read.csv) %>% bind_rows()
+saveRDS(results, file=file.path('results', 'GOA_pollock_retros.RDS' ))
+ff <- list.files(path='runs/GOA_pollock',
+                 pattern="ts.results.csv", recursive=TRUE,
+                 full.names=TRUE)
+results <- lapply(ff, read.csv) %>% bind_rows()
+saveRDS(results, file=file.path('results', 'GOA_pollock_ts_results.RDS' ))
+ff <- list.files(path='runs/GOA_pollock',
+                 pattern="par.results.csv", recursive=TRUE,
+                 full.names=TRUE)
+results <- lapply(ff, read.csv) %>% bind_rows()
+saveRDS(results, file=file.path('results', 'GOA_pollock_par_results.RDS' ))
+message("..done! files in results folder")
+
+
+
 ### Process all results together and melt into long format for ggplot
 results <- list.files('results', pattern='boot_retro',
                       full.names=TRUE) %>%

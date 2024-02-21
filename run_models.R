@@ -17,7 +17,7 @@ source('code/functions_pollock.R')
 ## For each boostrap data set, run a retrospective analysis
 Nreps <- 1000
 reps <- 0:Nreps # 0 is special code for original data
-Npeels <- 9
+Npeels <- 10
 peels <- 0:-Npeels
 
 ## Setup to run parallel, saving a single core free.
@@ -46,10 +46,15 @@ run_model(reps, model.name='GOA_NRS', miller=TRUE)
 
 ## make sure to manually delete runs and result files before
 ## rerunning
+## run_pollock_boot_iteration(boot=12, datlist=pkdatlist, replist=pkreplist)
 run_pollock_model(reps,datlist=pkdatlist, replist=pkreplist,
-                  model.name='GOA_pollock', miller=TRUE)
+                  model.name='GOA_pollock', miller=TRUE,
+                  clean.files=FALSE)
 run_pollock_model(reps,datlist=pkdatlist, replist=pkreplist,
-                  model.name='GOA_pollock', miller=FALSE)
+                  model.name='GOA_pollock', miller=FALSE,
+                  clean.files=FALSE)
+
+
 
 source('code/process_results.R')
 ## The models have different end years so the baseyears are
