@@ -44,17 +44,16 @@ run_model(reps, model.name='GOA_Pcod_noprior', miller=TRUE)
 run_model(reps, model.name='GOA_NRS')
 run_model(reps, model.name='GOA_NRS', miller=TRUE)
 
-## make sure to manually delete runs and result files before
+## make sure to delete runs and result files before
 ## rerunning
+## unlink('runs/GOA_pollock/', recursive=TRUE)
 ## run_pollock_boot_iteration(boot=12, datlist=pkdatlist, replist=pkreplist)
 run_pollock_model(reps,datlist=pkdatlist, replist=pkreplist,
                   model.name='GOA_pollock', miller=TRUE,
-                  clean.files=FALSE)
+                  clean.files=TRUE)
 run_pollock_model(reps,datlist=pkdatlist, replist=pkreplist,
                   model.name='GOA_pollock', miller=FALSE,
-                  clean.files=FALSE)
-
-
+                  clean.files=TRUE)
 
 source('code/process_results.R')
 ## The models have different end years so the baseyears are
