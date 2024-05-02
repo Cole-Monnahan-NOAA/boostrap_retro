@@ -207,7 +207,7 @@ run_SS_boot_iteration <- function(boot, model.name,
               overwrite=TRUE)
   newfiles <- list.files(wd, full.names=TRUE) # mark for deletion at end
   ## Run retro for this bootstrap one
-  SS_doRetro(masterdir=getwd(), oldsubdir=wd,
+  retro(masterdir=getwd(), oldsubdir=wd,
              newsubdir=paste0(wd, '/retros'),
              years=peels, extras='-nohess -nox -iprint 1000')
   dirvec <- file.path(paste0(wd, '/retros'), paste0("retro", peels))
