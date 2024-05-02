@@ -167,7 +167,12 @@ run_SS_boot_iteration <- function(boot, model.name,
   } else {
     wd <- file.path('runs', model.name, paste0("millerboot_", boot))
   }
-
+  rhofile <- ifelse(miller, 'results_miller_rho.csv', 'results_rho.csv')
+  if(file.exists(file.path(wd, rhofile))) {
+    message("Skipping ", boot, " of ", model.name, "for miller=", miller,
+            " because it exists already. Delete manually if needed.")
+    return(NULL)
+  }
   ## boot==0 is the original data, so skip resampling the data
   if(boot==0){
     ## The original data, whether miller or not
@@ -244,9 +249,8 @@ run_SS_boot_iteration <- function(boot, model.name,
     k <- k+1
   }
   dev.off()
-  tmp <- ifelse(miller, 'results_miller_rho.csv', 'results_rho.csv')
   rhos <- do.call(rbind, rhos)
-  write.csv(x=rhos, file=file.path(wd, tmp), row.names=FALSE)
+  write.csv(x=rhos, file=file.path(wd, rhofile), row.names=FALSE)
   if(clean.files){
     unlink(file.path(wd, 'retros'), recursive=TRUE)
     file.remove(file.path(wd, 'retroSummary.RDS'))
