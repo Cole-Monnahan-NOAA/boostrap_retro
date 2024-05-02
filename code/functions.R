@@ -6,15 +6,12 @@ get_res<-function(wd, boot, model, miller)
   get_ts <- function(rep, peel){
     ##Get timeseries results
     ##ssb and apical F
-    ssb_f_ts<-rep$sprseries[rep$sprseries$Yr<=rep$endyr,]
-
-    ##recruitment
-    recr_ts=rep$recruit[rep$recruit$Yr<=rep$endyr,]
+    ssb_f_rec_ts<-rep$sprseries[rep$sprseries$Yr<=rep$endyr,]
 
     ##Create data frames
-    ssb<-data.frame(assess_yr=rep$endyr, name='ssb', peel=peel, year=ssb_f_ts$Yr, value=ssb_f_ts$SSBfished)
-    ap_f<-data.frame(assess_yr=rep$endyr, name='f', peel=peel, year=ssb_f_ts$Yr, value=ssb_f_ts$sum_Apical_F)
-    recr<-data.frame(assess_yr=rep$endyr, name='recr', peel=peel,year=recr_ts$Yr,value=recr_ts$pred_recr)
+    ssb<-data.frame(assess_yr=rep$endyr, name='ssb', peel=peel, year=ssb_f_rec_ts$Yr, value=ssb_f_rec_ts$SSB) #this was set to SSBfished, which was incorrect.
+    ap_f<-data.frame(assess_yr=rep$endyr, name='f', peel=peel, year=ssb_f_rec_ts$Yr, value=ssb_f_rec_ts$sum_Apical_F)
+    recr<-data.frame(assess_yr=rep$endyr, name='recr', peel=peel,year=ssb_f_rec_ts$Yr,value=ssb_f_rec_ts$Recruits)
 
     ##Combine all timeseries results
     ts_res<-bind_rows(ssb,ap_f,recr)

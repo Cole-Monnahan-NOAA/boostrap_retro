@@ -15,13 +15,13 @@ pkreplist <- readRDS("models/GOA_pollock/repfile.RDS")
 source('code/functions_pollock.R')
 
 ## For each boostrap data set, run a retrospective analysis
-Nreps <- 1000
+Nreps <- 500
 reps <- 0:Nreps # 0 is special code for original data
-Npeels <- 10
+Npeels <- 14
 peels <- 0:-Npeels
 
 ## Setup to run parallel, saving a single core free.
-cpus <- parallel::detectCores()-2
+cpus <- parallel::detectCores()-3
 sfStop()
 sfInit( parallel=TRUE, cpus=cpus)
 sfExportAll()
@@ -35,14 +35,17 @@ sfExportAll()
 
 ## ## Run one in serial as a test
 ## test <- run_SS_boot_iteration(1, 'EBS_Pcod', TRUE)
+run_model(reps, model.name='GOA_NRS',clean.files=TRUE)
+run_model(reps, model.name='GOA_NRS',miller=TRUE, clean.files=TRUE)
+
+
+
 run_model(reps, model.name='EBS_Pcod')
 run_model(reps, model.name='EBS_Pcod', miller=TRUE)
 ## run_model(reps, model.name='GOA_Pcod_prior')
 ## run_model(reps, model.name='GOA_Pcod_prior', miller=TRUE)
 run_model(reps, model.name='GOA_Pcod_noprior')
 run_model(reps, model.name='GOA_Pcod_noprior', miller=TRUE)
-run_model(reps, model.name='GOA_NRS')
-run_model(reps, model.name='GOA_NRS', miller=TRUE)
 
 ## make sure to delete runs and result files before
 ## rerunning
